@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     }
     TRACE("loaded %s: %ld bytes\n", in_path, r);
 
-    int out_fd = open(out_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int out_fd = open(out_path, O_RDWR | O_CREAT, 0644);
     if (out_fd < 0) {
       ERR("failed to create: %s\n", out_path);
       return 3;
@@ -77,8 +77,6 @@ void emit1(int out_fd, byte val) {
 
 // emits an unsigned LEB, not padded
 void emit_u32leb(int out_fd, uint32_t val) {
-  off_t cur = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("  cur=0x%llx: emit_u32leb = %u\n", (long long)cur, val);
   do {
     uint32_t next = val >> 7;
     uint32_t v = val & 0x7F;
@@ -90,8 +88,6 @@ void emit_u32leb(int out_fd, uint32_t val) {
 
 // emits an unsigned LEB, padded to 4 bytes
 void emit_u32leb4(int out_fd, uint32_t val) {
-  off_t cur = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("  cur=0x%llx: emit_u32leb4 = %u\n", (long long)cur, val);
   byte buf[4];
   buf[0] = 0x80 | (val & 0x7F);
   buf[1] = 0x80 | ((val >> 7) & 0x7F);
@@ -102,8 +98,6 @@ void emit_u32leb4(int out_fd, uint32_t val) {
 
 // emits an unsigned LEB, padded to 5 bytes
 void emit_u32leb5(int out_fd, uint32_t val) {
-  off_t cur = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("  cur=0x%llx: emit_u32leb5 = %u\n", (long long)cur, val);
   byte buf[5];
   buf[0] = 0x80 | (val & 0x7F);
   buf[1] = 0x80 | ((val >> 7) & 0x7F);
@@ -115,14 +109,12 @@ void emit_u32leb5(int out_fd, uint32_t val) {
 
 // emits the bytes from {start ... buf->ptr}
 void emit_from(int out_fd, const byte* start, buffer_t* buf) {
-  off_t cur = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("  cur=0x%llx: emit_from: %d bytes\n", (long long)cur, (int)(buf->ptr - start));
   write(out_fd, start, (buf->ptr - start));
 }
 
 off_t emit_reserved_length(int out_fd) {
   off_t before = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("  cur=0x%llx: reserve 5 byte LEB for length\n", (long long)before);
+  TRACE("  reserve 5 byte LEB for length @ %lld\n", (long long)before);
   emit_u32leb5(out_fd, 0);
   return before;
 }
@@ -130,7 +122,7 @@ off_t emit_reserved_length(int out_fd) {
 void emit_patched_length(int out_fd, off_t before) {
   off_t cur = lseek(out_fd, 0, SEEK_CUR);
   off_t diff = cur - before - 5;
-  TRACE("  cur=0x%llx: patch 5 byte LEB for length @ 0x%llx = %lld\n", (long long)cur, (long long)before, (long long)diff);
+  TRACE("  patch 5 byte LEB for length @ %lld = %lld\n", (long long)before, (long long)diff);
   lseek(out_fd, before, SEEK_SET);
   emit_u32leb5(out_fd, diff);
   lseek(out_fd, cur, SEEK_SET);
@@ -248,8 +240,6 @@ int weeify(int out_fd, const byte* start, const byte* end) {
       return -3;
     }
   }
-  off_t cur = lseek(out_fd, 0, SEEK_CUR);
-  TRACE("file size = %lld bytes\n", (long long)cur);
   return 0;
 }
 

@@ -8,8 +8,11 @@ clean:
 test: weerun
 	./weerun -test
 
-weerun: vm.h weerun.c common.h common.c test.h test.c ir.h ir.c weewasm.h illegal.h parse.c disass.c disass.h rewrite.c
-	cc -g -o weerun weerun.c common.c test.c ir.c parse.c disass.c rewrite.c
+weerun: vm.h weerun.c common.h common.c test.h test.c ir.h ir.c weedis.c weedis.h
+	cc -o weerun weerun.c common.c test.c ir.c weedis.c -lm
 
 weeify: vm.h weeify.c common.h common.c test.h test.c weewasm.h illegal.h
 	cc -o weeify weeify.c common.c
+
+build-test: weerun weeify
+	cd tests; ./build.sh

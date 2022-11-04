@@ -105,8 +105,6 @@
 #define WASM_OP_F32_CONVERT_I64_S	0xB4 /* "f32.convert_i64_s", ImmSigs.NONE */
 #define WASM_OP_F32_CONVERT_I64_U	0xB5 /* "f32.convert_i64_u", ImmSigs.NONE */
 #define WASM_OP_F32_DEMOTE_F64		0xB6 /* "f32.demote_f64", ImmSigs.NONE */
-#define WASM_OP_F64_CONVERT_I64_S	0xB9 /* "f64.convert_i64_s" */
-#define WASM_OP_F64_CONVERT_I64_U	0xBA /* "f64.convert_i64_u" */
 #define WASM_OP_F64_PROMOTE_F32		0xBB /* "f64.promote_f32", ImmSigs.NONE */
 #define WASM_OP_I32_REINTERPRET_F32	0xBC /* "i32.reinterpret_f32", ImmSigs.NONE */
 #define WASM_OP_I64_REINTERPRET_F64	0xBD /* "i64.reinterpret_f64", ImmSigs.NONE */

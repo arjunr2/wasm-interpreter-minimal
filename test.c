@@ -6,14 +6,13 @@
 #include "common.h"
 #include "test.h"
 #include "ir.h"
-#include "weewasm.h"
 
 typedef struct {
   const char* name;
   int (*run)();
 } test_t;
 
-#define VERBOSE g_trace
+#define VERBOSE 0
 
 #define CHECK_EQ(x, y) do {			\
     int vx = (x);						\
@@ -364,32 +363,6 @@ int test_parse_ref() {
   return 1;
 }
 
-#define U32_LEB4(val) (0x80 | ((val) & 0x7F)), (0x80 | ((val >> 7) & 0x7F)), (0x80 | ((val >> 14) & 0x7F)), ((val >> 21) & 0x7F)
-
-int test_rewrite_br1() {
-  byte code[6] = {WASM_OP_BR, U32_LEB4(0), WASM_OP_END};
-  rewrite_brs(code, code + sizeof(code));
-  CHECK_EQ(WASM_OP_JMP, code[0]);
-  CHECK_EQ(4, *(int32_t*)&code[1]);
-  return 1;
-}
-
-int test_rewrite_br2() {
-  byte code[9] = {WASM_OP_BR, U32_LEB4(0), WASM_OP_NOP, WASM_OP_UNREACHABLE, WASM_OP_NOP, WASM_OP_END};
-  rewrite_brs(code, code + sizeof(code));
-  CHECK_EQ(WASM_OP_JMP, code[0]);
-  CHECK_EQ(7, *(int32_t*)&code[1]);
-  return 1;
-}
-
-int test_rewrite_loop1() {
-  byte code[12] = {WASM_OP_LOOP, 0xc0, WASM_OP_NOP, WASM_OP_UNREACHABLE, WASM_OP_BR, U32_LEB4(0), WASM_OP_NOP, WASM_OP_END, WASM_OP_END};
-  rewrite_brs(code, code + sizeof(code));
-  CHECK_EQ(WASM_OP_JMP, code[4]);
-  CHECK_EQ(-5, *(int32_t*)&code[5]);
-  return 1;
-}
-
 test_t all_tests[] = {
   {"i32leb", test_i32},
   {"i32leb_ext", test_i32ext},
@@ -402,9 +375,6 @@ test_t all_tests[] = {
   {"parse_i32", test_parse_i32},
   {"parse_f64", test_parse_f64},
   {"parse_ref", test_parse_ref},
-  {"rewrite_br1", test_rewrite_br1},
-  {"rewrite_br2", test_rewrite_br2},
-  {"rewrite_loop1", test_rewrite_loop1},
 };
 
 //================================================================================
@@ -428,3 +398,7 @@ int run_tests() {
 }
 
       
+int foo() {
+  { BYTES(0x80, 0x01); OK_i32(2, 128); }
+  return 1;
+}

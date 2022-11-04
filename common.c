@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -10,8 +11,6 @@
 int g_trace = 0;
 // The global disassembly flag
 int g_disassemble = 0;
-// The global indentation amount
-int g_indent = 0;
 
 #define MORE(b) (((b) & 0x80) != 0)
 #define ERROR (len != NULL ? *len = -(ptr - start) : 0), 0
@@ -37,6 +36,13 @@ int g_indent = 0;
     return ((0x7F & mask) == legal) ? (result << rem) >> rem : result;	\
   }									\
   return ERROR;
+
+
+#define STACK_INIT(dst, type) \
+  dst = ( type *) malloc(8 * sizeof( type ));
+
+#define PUSH(dst, src)  \
+  
 
 int32_t decode_i32leb(const uint8_t* ptr, const uint8_t* limit, ssize_t *len) {
   BODY(int32_t, 0xF8, 0x78);
@@ -68,6 +74,7 @@ uint32_t decode_u32(const uint8_t* ptr, const uint8_t* limit, ssize_t *len) {
   *len = 4;
   return (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
 }
+
 
 ssize_t load_file(const char* path, uint8_t** start, uint8_t** end) {
   // Open the file for reading.
@@ -126,13 +133,138 @@ int32_t read_i32leb(buffer_t* buf) {
   return val;
 }
 
+// Read a 64-bit unsigned int, advancing the buffer
+uint64_t read_u64(buffer_t* buf) {
+  ssize_t len = 0;
+  if (buf->ptr + 8 > buf->end) {
+    ERR("u64 read out of bounds");
+    return 0;
+  }
+  uint32_t low = decode_u32(buf->ptr, buf->end, &len);
+  buf->ptr += len;
+  uint32_t high = decode_u32(buf->ptr, buf->end, &len);
+  buf->ptr += len;
+  uint64_t val = ((uint64_t)(high) << 32) | low;
+  return val;
+}
+
+// Read a string of length n, advancing the buffer
+char* read_string(buffer_t* buf, uint32_t* len) {
+  uint32_t sz = read_u32leb(buf);
+  if (buf->ptr + sz > buf->end) {
+    ERR("string read out of bounds\n");
+    return NULL;
+  }
+  
+  char *res = (char*) malloc((sz + 1) * sizeof(char));
+  memcpy(res, buf->ptr, sz);
+  res[sz] = 0;
+
+  buf->ptr += sz;
+  *len = sz;
+  return res;  
+
+}
+
 // Read an unsigned 8-bit byte, advancing the buffer.
-uint32_t read_u8(buffer_t* buf) {
-  if (buf->ptr >= buf->end) return 0;
+uint8_t read_u8(buffer_t* buf) {
+  if (buf->ptr >= buf->end) {
+    ERR("u8 read out of bounds");
+    return 0;
+  }
   byte val = *buf->ptr;
   buf->ptr++;
   return val;
 }
+
+// Read an unsigned 32-bit byte, advancing the buffer.
+uint32_t read_u32(buffer_t* buf) {
+  ssize_t len;
+  uint32_t val = decode_u32(buf->ptr, buf->ptr + 4, &len);
+  buf->ptr += 4;
+  return val;
+}
+
+
+/* String operations */
+string stralloc() {
+  string s;
+  s.cap = 16;
+  s.v = (char*) malloc(s.cap);
+  s.v[0] = 0;
+  return s;
+}
+
+static uint32_t nextpow2(uint32_t val) {
+  val--;
+  val |= (val >> 1);
+  val |= (val >> 2);
+  val |= (val >> 4);
+  val |= (val >> 8);
+  val |= (val >> 16);
+  val++;
+  return val;
+}
+
+static string grow_string(string s, uint32_t fin_len) {
+  uint32_t new_size = nextpow2(fin_len);
+  if (new_size == 0) {
+    new_size = fin_len;
+  }
+  s.v = (char*) realloc(s.v, new_size);
+  s.cap = new_size;
+  return s;
+}
+
+string strappend(string s, const char* c) {
+  uint32_t len1 = strlen(s.v);
+  uint32_t len2 = strlen(c);
+  uint32_t fin_len = len1 + len2 + 1;
+  if (fin_len > s.cap) {
+    s = grow_string(s, fin_len);
+  }
+  strcat(s.v, c);
+  return s;
+}
+
+string strappend_int32(string s, uint32_t val, bool sgn) {
+  char buffer[15];
+  if (sgn) {
+    sprintf(buffer, "%d ", val);
+  } else {
+    sprintf(buffer, "%u ", val);
+  }
+  return strappend(s, buffer);
+}
+
+string strappend_byte(string s, byte val) {
+  char buffer[4];
+  sprintf(buffer, "%02X ", val);
+  return strappend(s, buffer);
+}
+
+string strappend_hex64(string s, uint64_t val) {
+  char buffer[20];
+  sprintf(buffer, "%016lX ", val);
+  return strappend(s, buffer);
+}
+
+string strclear(string s) {
+  s.v[0] = 0;
+  return s;
+}
+
+string strip_chars(string s, int n) {
+  uint32_t len = strlen(s.v);
+  s.v[len - n] = 0;
+  return s;
+}
+
+
+void strdelete(string s) {
+  free(s.v);
+}
+/*   */
 
 
 ssize_t unload_file(uint8_t** start, uint8_t** end) {

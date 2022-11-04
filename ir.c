@@ -17,9 +17,7 @@ wasm_value_t parse_wasm_value(char* str) {
     } else {
       // treat the input as an integer
       char* end = NULL;
-      int base = 10;
-      if (len >= 2 && str[1] == 'x' || str[1] == 'X') base = 16;
-      long result = strtol(str, &end, base);
+      long result = strtol(str, &end, 10);
       if (end == (str + len)) return wasm_i32_value(result);
     }
   }
@@ -39,8 +37,7 @@ void print_wasm_value(wasm_value_t val) {
     printf("%lf", val.val.f64);
     break;
   case EXTERNREF:
-    if (val.val.ref == NULL) printf("null");
-    else printf("%p", val.val.ref);
+    printf("%p", val.val.ref);
     break;
   }
 }
@@ -54,8 +51,7 @@ void trace_wasm_value(wasm_value_t val) {
     TRACE("%lf", val.val.f64);
     break;
   case EXTERNREF:
-    if (val.val.ref == NULL) printf("null");
-    else TRACE("%p", val.val.ref);
+    TRACE("%p", val.val.ref);
     break;
   }
 }
@@ -82,10 +78,4 @@ wasm_value_t wasm_ref_value(void* val) {
     .val.ref = val,
   };
   return r;
-}
-
-void init_wasm_module(wasm_module_t* module) {
-  memset(module, 0, sizeof(wasm_module_t));
-  module->start_func = -1;
-  module->main_func = -1;
 }

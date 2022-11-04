@@ -3,6 +3,8 @@
 #define WASM_MAGIC 0x6d736100u
 #define WASM_VERSION 1
 
+#define PAGE_SIZE 65536
+
 // Section constants
 #define WASM_SECT_TYPE 1
 #define WASM_SECT_IMPORT 2
@@ -21,6 +23,8 @@
 #define WASM_OP_NOP			0x01 /* "nop" */
 #define WASM_OP_BLOCK			0x02 /* "block" BLOCKT */
 #define WASM_OP_LOOP			0x03 /* "loop" BLOCKT */
+#define WASM_OP_IF			0x04 /* "if" BLOCKT */
+#define WASM_OP_ELSE			0x05 /* "else" */
 #define WASM_OP_END			0x0B /* "end" */
 #define WASM_OP_BR			0x0C /* "br" LABEL */
 #define WASM_OP_BR_IF			0x0D /* "br_if" LABEL */
@@ -35,6 +39,8 @@
 #define WASM_OP_LOCAL_TEE		0x22 /* "local.tee" LOCAL */
 #define WASM_OP_GLOBAL_GET		0x23 /* "global.get" GLOBAL */
 #define WASM_OP_GLOBAL_SET		0x24 /* "global.set" GLOBAL */
+#define WASM_OP_TABLE_GET		0x25 /* "table.get" TABLE */
+#define WASM_OP_TABLE_SET		0x26 /* "table.set" TABLE */
 #define WASM_OP_I32_LOAD		0x28 /* "i32.load" MEMARG */
 #define WASM_OP_F64_LOAD		0x2B /* "f64.load" MEMARG */
 #define WASM_OP_I32_LOAD8_S		0x2C /* "i32.load8_s" MEMARG */
@@ -90,13 +96,197 @@
 #define WASM_OP_I32_TRUNC_F64_U		0xAB /* "i32.trunc_f64_u" */
 #define WASM_OP_F64_CONVERT_I32_S	0xB7 /* "f64.convert_i32_s" */
 #define WASM_OP_F64_CONVERT_I32_U	0xB8 /* "f64.convert_i32_u" */
+#define WASM_OP_F64_CONVERT_I64_S	0xB9 /* "f64.convert_i64_s" */
+#define WASM_OP_F64_CONVERT_I64_U	0xBA /* "f64.convert_i64_u" */
 #define WASM_OP_I32_EXTEND8_S		0xC0 /* "i32.extend8_s" */
 #define WASM_OP_I32_EXTEND16_S		0xC1 /* "i32.extend16_s" */
 
-#define WASM_OP_JMP                     0xF0 /* "jmp" */
-#define WASM_OP_JMP_IF                  0xF1 /* "jmp_if */
-#define WASM_OP_JMP_TABLE               0xF2 /*  jmp_table */
 
-#define WEEWASM_INTRINSIC_PUTI 0x01
-#define WEEWASM_INTRINSIC_PUTD 0x02
-#define WEEWASM_INTRINSIC_PUTS 0x03
+// Value decoding
+#define WASM_TYPE_I32 0x7F
+#define WASM_TYPE_F64 0x7C
+#define WASM_TYPE_EXTERNREF 0x6F
+#define WASM_TYPE_FUNCREF 0x70
+
+#define WASM_TYPE_GLOBAL_MUTABLE 0x01
+
+// Kind decoding
+#define WASM_KIND_FUNC 0x60
+
+// Import/export desc decoding
+#define WASM_IE_DESC_FUNC 0x00
+#define WASM_IE_DESC_TABLE 0x01
+#define WASM_IE_DESC_MEM 0x02
+#define WASM_IE_DESC_GLOBAL 0x03
+
+#define TARGET_LABEL_DEF(label) [label] = &&TARGET_##label
+
+#define CREATE_TARGET_JUMP_TABLE() \
+  static void *target_jump_table[] = {  \
+    TARGET_LABEL_DEF(WASM_OP_UNREACHABLE), \
+    TARGET_LABEL_DEF(WASM_OP_NOP), \
+    TARGET_LABEL_DEF(WASM_OP_BLOCK), \
+    TARGET_LABEL_DEF(WASM_OP_LOOP), \
+    TARGET_LABEL_DEF(WASM_OP_IF), \
+    TARGET_LABEL_DEF(WASM_OP_ELSE), \
+    TARGET_LABEL_DEF(WASM_OP_END), \
+    TARGET_LABEL_DEF(WASM_OP_BR), \
+    TARGET_LABEL_DEF(WASM_OP_BR_IF), \
+    TARGET_LABEL_DEF(WASM_OP_BR_TABLE), \
+    TARGET_LABEL_DEF(WASM_OP_RETURN), \
+    TARGET_LABEL_DEF(WASM_OP_CALL), \
+    TARGET_LABEL_DEF(WASM_OP_CALL_INDIRECT), \
+    TARGET_LABEL_DEF(WASM_OP_DROP), \
+    TARGET_LABEL_DEF(WASM_OP_SELECT), \
+    TARGET_LABEL_DEF(WASM_OP_LOCAL_GET), \
+    TARGET_LABEL_DEF(WASM_OP_LOCAL_SET), \
+    TARGET_LABEL_DEF(WASM_OP_LOCAL_TEE), \
+    TARGET_LABEL_DEF(WASM_OP_GLOBAL_GET), \
+    TARGET_LABEL_DEF(WASM_OP_GLOBAL_SET), \
+    TARGET_LABEL_DEF(WASM_OP_TABLE_GET), \
+    TARGET_LABEL_DEF(WASM_OP_TABLE_SET), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LOAD), \
+    TARGET_LABEL_DEF(WASM_OP_F64_LOAD), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LOAD8_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LOAD8_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LOAD16_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LOAD16_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_STORE), \
+    TARGET_LABEL_DEF(WASM_OP_F64_STORE), \
+    TARGET_LABEL_DEF(WASM_OP_I32_STORE8), \
+    TARGET_LABEL_DEF(WASM_OP_I32_STORE16), \
+    TARGET_LABEL_DEF(WASM_OP_I32_CONST), \
+    TARGET_LABEL_DEF(WASM_OP_F64_CONST), \
+    TARGET_LABEL_DEF(WASM_OP_I32_EQZ), \
+    TARGET_LABEL_DEF(WASM_OP_I32_EQ), \
+    TARGET_LABEL_DEF(WASM_OP_I32_NE), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LT_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LT_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_GT_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_GT_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LE_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_LE_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_GE_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_GE_U), \
+    TARGET_LABEL_DEF(WASM_OP_F64_EQ), \
+    TARGET_LABEL_DEF(WASM_OP_F64_NE), \
+    TARGET_LABEL_DEF(WASM_OP_F64_LT), \
+    TARGET_LABEL_DEF(WASM_OP_F64_GT), \
+    TARGET_LABEL_DEF(WASM_OP_F64_LE), \
+    TARGET_LABEL_DEF(WASM_OP_F64_GE), \
+    TARGET_LABEL_DEF(WASM_OP_I32_CLZ), \
+    TARGET_LABEL_DEF(WASM_OP_I32_CTZ), \
+    TARGET_LABEL_DEF(WASM_OP_I32_POPCNT), \
+    TARGET_LABEL_DEF(WASM_OP_I32_ADD), \
+    TARGET_LABEL_DEF(WASM_OP_I32_SUB), \
+    TARGET_LABEL_DEF(WASM_OP_I32_MUL), \
+    TARGET_LABEL_DEF(WASM_OP_I32_DIV_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_DIV_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_REM_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_REM_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_AND), \
+    TARGET_LABEL_DEF(WASM_OP_I32_OR), \
+    TARGET_LABEL_DEF(WASM_OP_I32_XOR), \
+    TARGET_LABEL_DEF(WASM_OP_I32_SHL), \
+    TARGET_LABEL_DEF(WASM_OP_I32_SHR_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_SHR_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_ROTL), \
+    TARGET_LABEL_DEF(WASM_OP_I32_ROTR), \
+    TARGET_LABEL_DEF(WASM_OP_F64_ADD), \
+    TARGET_LABEL_DEF(WASM_OP_F64_SUB), \
+    TARGET_LABEL_DEF(WASM_OP_F64_MUL), \
+    TARGET_LABEL_DEF(WASM_OP_F64_DIV), \
+    TARGET_LABEL_DEF(WASM_OP_I32_TRUNC_F64_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_TRUNC_F64_U), \
+    TARGET_LABEL_DEF(WASM_OP_F64_CONVERT_I32_S), \
+    TARGET_LABEL_DEF(WASM_OP_F64_CONVERT_I32_U), \
+    TARGET_LABEL_DEF(WASM_OP_F64_CONVERT_I64_S), \
+    TARGET_LABEL_DEF(WASM_OP_F64_CONVERT_I64_U), \
+    TARGET_LABEL_DEF(WASM_OP_I32_EXTEND8_S), \
+    TARGET_LABEL_DEF(WASM_OP_I32_EXTEND16_S), \
+  }
+
+// Constant array
+static const char* opcode_names[] = {
+    [WASM_OP_UNREACHABLE]       = "unreachable",
+    [WASM_OP_NOP]               = "nop",			
+    [WASM_OP_BLOCK]             = "block",
+    [WASM_OP_LOOP]              = "loop",			
+    [WASM_OP_IF]                = "if",			
+    [WASM_OP_ELSE]              = "else",			
+    [WASM_OP_END]               = "end",
+    [WASM_OP_BR]                = "br",
+    [WASM_OP_BR_IF]             = "br_if",			
+    [WASM_OP_BR_TABLE]          = "br_table",
+    [WASM_OP_RETURN]            = "return",
+    [WASM_OP_CALL]              = "call",
+    [WASM_OP_CALL_INDIRECT]     = "call_indirect",	
+    [WASM_OP_DROP]			        = "drop",
+    [WASM_OP_SELECT]			      = "select",
+    [WASM_OP_LOCAL_GET]		      = "local.get",
+    [WASM_OP_LOCAL_SET]		      = "local.set",
+    [WASM_OP_LOCAL_TEE]		      = "local.tee",
+    [WASM_OP_GLOBAL_GET]		    = "global.get",
+    [WASM_OP_GLOBAL_SET]		    = "global.set",
+    [WASM_OP_TABLE_GET]		      = "table.get",
+    [WASM_OP_TABLE_SET]		      = "table.set",
+    [WASM_OP_I32_LOAD]		      = "i32.load",
+    [WASM_OP_F64_LOAD]		      = "f64.load",
+    [WASM_OP_I32_LOAD8_S]		    = "i32.load8_s",
+    [WASM_OP_I32_LOAD8_U]		    = "i32.load8_u",
+    [WASM_OP_I32_LOAD16_S]		  = "i32.load16_s",
+    [WASM_OP_I32_LOAD16_U]		  = "i32.load16_u",
+    [WASM_OP_I32_STORE]		      = "i32.store",
+    [WASM_OP_F64_STORE]		      = "f64.store",
+    [WASM_OP_I32_STORE8]		    = "i32.store8",
+    [WASM_OP_I32_STORE16]		    = "i32.store16",
+    [WASM_OP_I32_CONST]		      = "i32.const",
+    [WASM_OP_F64_CONST]		      = "f64.const",
+    [WASM_OP_I32_EQZ]			      = "i32.eqz",
+    [WASM_OP_I32_EQ]		        = "i32.eq",
+    [WASM_OP_I32_NE]		        = "i32.ne",
+    [WASM_OP_I32_LT_S]	        = "i32.lt_s",
+    [WASM_OP_I32_LT_U]	        = "i32.lt_u",
+    [WASM_OP_I32_GT_S]	        = "i32.gt_s",
+    [WASM_OP_I32_GT_U]	        = "i32.gt_u",
+    [WASM_OP_I32_LE_S]	        = "i32.le_s",
+    [WASM_OP_I32_LE_U]	        = "i32.le_u",
+    [WASM_OP_I32_GE_S]	        = "i32.ge_s",
+    [WASM_OP_I32_GE_U]	        = "i32.ge_u",
+    [WASM_OP_F64_EQ]			      = "f64.eq",
+    [WASM_OP_F64_NE]			      = "f64.ne",
+    [WASM_OP_F64_LT]			      = "f64.lt",
+    [WASM_OP_F64_GT]			      = "f64.gt",
+    [WASM_OP_F64_LE]			      = "f64.le",
+    [WASM_OP_F64_GE]		        = "f64.ge",
+    [WASM_OP_I32_CLZ]	          = "i32.clz",
+    [WASM_OP_I32_CTZ]	          = "i32.ctz",
+    [WASM_OP_I32_POPCNT]	      = "i32.popcnt",
+    [WASM_OP_I32_ADD]		        = "i32.add",
+    [WASM_OP_I32_SUB]		        = "i32.sub",
+    [WASM_OP_I32_MUL]		        = "i32.mul",
+    [WASM_OP_I32_DIV_S]	        = "i32.div_s",
+    [WASM_OP_I32_DIV_U]	        = "i32.div_u",
+    [WASM_OP_I32_REM_S]	        = "i32.rem_s",
+    [WASM_OP_I32_REM_U]	        = "i32.rem_u",
+    [WASM_OP_I32_AND]		        = "i32.and",
+    [WASM_OP_I32_OR]			      = "i32.or",
+    [WASM_OP_I32_XOR]		        = "i32.xor",
+    [WASM_OP_I32_SHL]		        = "i32.shl",
+    [WASM_OP_I32_SHR_S]         = "i32.shr_s",
+    [WASM_OP_I32_SHR_U]         = "i32.shr_u",
+    [WASM_OP_I32_ROTL]	        = "i32.rotl",
+    [WASM_OP_I32_ROTR]	        = "i32.rotr",
+    [WASM_OP_F64_ADD]		        = "f64.add",
+    [WASM_OP_F64_SUB]		        = "f64.sub",
+    [WASM_OP_F64_MUL]		        = "f64.mul",
+    [WASM_OP_F64_DIV]		        = "f64.div",
+    [WASM_OP_I32_TRUNC_F64_S]   = "i32.trunc_f64_s",
+    [WASM_OP_I32_TRUNC_F64_U]   = "i32.trunc_f64_u",
+    [WASM_OP_F64_CONVERT_I32_S] = "f64.convert_i32_s",
+    [WASM_OP_F64_CONVERT_I32_U] = "f64.convert_i32_u",
+    [WASM_OP_F64_CONVERT_I64_S] = "f64.convert_i64_s",
+    [WASM_OP_F64_CONVERT_I64_U] = "f64.convert_i64_u",
+    [WASM_OP_I32_EXTEND8_S]     = "i32.extend8_s",
+    [WASM_OP_I32_EXTEND16_S]    = "i32.extend16_s"
+};
