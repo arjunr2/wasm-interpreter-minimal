@@ -197,20 +197,32 @@
 #define EXPAND_ARGS1(l)         ptr[0].val.l 
 #define EXPAND_ARGS0()    
 
+#define EXPAND2_ARGS3()       ptr[0], ptr[1], ptr[2]
+#define EXPAND2_ARGS2()       ptr[0], ptr[1]
+#define EXPAND2_ARGS1()       ptr[0] 
+#define EXPAND2_ARGS0()    
+
 #define IMPORT_CHECK_CALL(name, rty, fn, num, args...) \
   if (!strcmp(import->member_name, name)) { \
     result = wasm_##rty##_value( fn(EXPAND_ARGS##num(args)) ); \
+  }
+  
+#define IMPORT_CHECK_CALL2(name, fn, numparams)  \
+  if (!strcmp(import->member_name, name)) { \
+    result = fn(EXPAND2_ARGS##numparams()); \
   } \
   
 
 #define CALL_ROUTINE()  \
     /* If it is an import, call function and push result on stack */  \
-    if (next_fn_idx < inst->module_num_imports) { \
-      uint32_t num_params = call_fn->sig->num_params; \
-      top -= num_params;  \
-      wasm_value_t result = invoke_native_function(inst, top, num_params);  \
+    if (next_fn_idx < inst->module->num_imports) {  \
+      wasm_import_decl_t* import = &inst->module->imports[next_fn_idx]; \
+      wasm_sig_decl_t* sig = call_fn->sig;  \
+      top -= sig->num_params; \
+      wasm_value_t result = invoke_native_function(inst, top, import, sig); \
+      if (sig->num_results != 0) {  PUSH(result); } \
+      TARGET_FETCH(); \
     } \
-      \
     /* Save current function context */ \
     wasm_context_t ctx = {  \
       .ret_addr = *ip,  \
@@ -233,7 +245,6 @@
                       \
     /* Trace debugging */ \
     TRACE_LOCAL_LIST(); \
-  fetch_next: \
   
 
 // Disassembles and runs a wasm module.
@@ -489,17 +500,29 @@ wasm_value_t invoke_native_function(wasm_instance_t *inst, wasm_value_t* ptr,
   uint32_t num_results = sig->num_results;
 
   wasm_value_t result = wasm_ref_value(NULL);
-  IMPORT_CHECK_CALL("obj.new",      ref, native_obj_new,        0);
-  IMPORT_CHECK_CALL("obj.box_i32",  ref, native_obj_box_i32,    1, i32);
-  IMPORT_CHECK_CALL("obj.box_f64",  ref, native_obj_box_f64,    1, f64);
+  //IMPORT_CHECK_CALL("obj.new",      ref, native_obj_new,        0);
+  //IMPORT_CHECK_CALL("obj.box_i32",  ref, native_obj_box_i32,    1, i32);
+  //IMPORT_CHECK_CALL("obj.box_f64",  ref, native_obj_box_f64,    1, f64);
 
-  IMPORT_CHECK_CALL("obj.get",      ref, native_obj_get,        2, ref, ref);
-  IMPORT_CHECK_CALL("obj.set",      ref, native_obj_set,        3, ref, ref, ref);
+  //IMPORT_CHECK_CALL("obj.get",      ref, native_obj_get,        2, ref, ref);
+  //IMPORT_CHECK_CALL("obj.set",      ref, native_obj_set,        3, ref, ref, ref);
 
-  IMPORT_CHECK_CALL("i32.unbox",    i32, native_i32_unbox,      1, ref);
-  IMPORT_CHECK_CALL("f64.unbox",    f64, native_f64_unbox,      1, ref);
+  //IMPORT_CHECK_CALL("i32.unbox",    i32, native_i32_unbox,      1, ref);
+  //IMPORT_CHECK_CALL("f64.unbox",    f64, native_f64_unbox,      1, ref);
+  //
+  //IMPORT_CHECK_CALL("obj.eq",       i32, native_obj_eq,         2, ref, ref);
+
+  IMPORT_CHECK_CALL2("obj.new",      native_obj_new,        0);
+  IMPORT_CHECK_CALL2("obj.box_i32",  native_obj_box_i32,    1);
+  IMPORT_CHECK_CALL2("obj.box_f64",  native_obj_box_f64,    1);
+
+  IMPORT_CHECK_CALL2("obj.get",      native_obj_get,        2);
+  IMPORT_CHECK_CALL2("obj.set",      native_obj_set,        3);
+
+  IMPORT_CHECK_CALL2("i32.unbox",    native_i32_unbox,      1);
+  IMPORT_CHECK_CALL2("f64.unbox",    native_f64_unbox,      1);
   
-  IMPORT_CHECK_CALL("obj.eq",       i32, native_obj_eq,         2, ref, ref);
+  IMPORT_CHECK_CALL2("obj.eq",       native_obj_eq,         2);
 
   if (result.tag == EXTERNREF && result.val.ref == NULL) {
     ERR("Could not find import function: \'%s\':\'%s\'\n", import->mod_name, import->member_name);
@@ -713,38 +736,9 @@ start_init:
     next_fn_idx = read_u32leb(buf);
 
     wasm_func_decl_t *call_fn = &inst->module->funcs[next_fn_idx];
-    /* If it is an import, call function and push result on stack */
-    if (next_fn_idx < inst->module->num_imports) {
-      wasm_import_decl_t* import = &inst->module->imports[next_fn_idx];
-      wasm_sig_decl_t* sig = call_fn->sig;
-      top -= sig->num_params;
-      wasm_value_t result = invoke_native_function(inst, top, import, sig);
-      if (sig->num_results != 0) {
-        PUSH(result);
-      }
-    }
-
-    /* Save current function context */
-    wasm_context_t ctx = {
-      .ret_addr = *ip,
-      .block_depth = block_depth,
-      .fn_idx = fn_idx,
-      .locals = locals,
-      .op_ptr = op_ptr
-    };
-    PUSH_FRAME(ctx);
-
-    /* Init new frame and jump to code section */
-    fn_idx = next_fn_idx;
-    fn = call_fn;
-    block_depth = 0;
-    locals = top - fn->sig->num_params;
-    *ip = fn->code_start;
-
-    /* Function body locals */
-    PUSH_FUNCTION_LOCALS();
     
-    TRACE_LOCAL_LIST();
+    CALL_ROUTINE();
+
     TARGET_FETCH(); 
   }
 
@@ -762,37 +756,7 @@ start_init:
     // Dynamic type check
     if (call_fn == NULL || (call_fn->sig_index != type_idx)) { TRAP(); }
 
-    /* If it is an import, call function and push result on stack */
-    if (next_fn_idx < inst->module->num_imports) {
-      wasm_import_decl_t* import = &inst->module->imports[next_fn_idx];
-      wasm_sig_decl_t* sig = call_fn->sig;
-      top -= sig->num_params;
-      wasm_value_t result = invoke_native_function(inst, top, import, sig);
-      if (sig->num_results != 0) {
-        PUSH(result);
-      }
-    }
-    /* Save current function context */
-    wasm_context_t ctx = {
-      .ret_addr = *ip,
-      .block_depth = block_depth,
-      .fn_idx = fn_idx,
-      .locals = locals,
-      .op_ptr = op_ptr
-    };
-    PUSH_FRAME(ctx);
-
-    /* Init new frame and jump to code section */
-    fn_idx = next_fn_idx;
-    fn = call_fn;
-    block_depth = 0;
-    locals = top - fn->sig->num_params;
-    *ip = fn->code_start;
-
-    /* Function body locals */
-    PUSH_FUNCTION_LOCALS();
-    
-    TRACE_LOCAL_LIST();
+    CALL_ROUTINE();
 
     TARGET_FETCH(); 
   }
