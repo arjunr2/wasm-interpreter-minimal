@@ -343,6 +343,11 @@ void decode_function_section(wasm_module_t *module, buffer_t *buf, uint32_t len)
   MALLOC(funcs, wasm_func_decl_t, num_imports + num_funcs);
 
   ALLOC_STR(s);
+  for (uint32_t i = 0; i < num_imports; i++) {
+    wasm_func_decl_t *func = &funcs[i];
+    func->sig_index = module->imports[i].index;
+    func->sig = &module->sigs[func->sig_index];
+  }
   for (uint32_t i = 0; i < num_funcs; i++) {
     wasm_func_decl_t *func = &funcs[i + num_imports];
     APPEND_TAB(s);

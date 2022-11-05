@@ -13,6 +13,7 @@
 #include "weewasm.h"
 #include "illegal.h"
 #include "ir.h"
+#include "native.h"
 
 #define TRAP()  \
   printf("!trap\n");\
@@ -190,7 +191,16 @@
   goto *target_jump_table[opcode];
 
 
-#define IMPORT_FUNCTION_CHECK() \
+/* Import macros */
+#define EXPAND_ARGS3(a, b, l)   EXPAND_ARGS2(a, b), ptr[2].val.l
+#define EXPAND_ARGS2(a, l)      EXPAND_ARGS1(a), ptr[1].val.l
+#define EXPAND_ARGS1(l)         ptr[0].val.l 
+#define EXPAND_ARGS0()    
+
+#define IMPORT_CHECK_CALL(name, rty, fn, num, args...) \
+  if (!strcmp(import->member_name, name)) { \
+    result = wasm_##rty##_value( fn(EXPAND_ARGS##num(args)) ); \
+  } \
   
 
 #define CALL_ROUTINE()  \
@@ -398,6 +408,10 @@ void table_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
   }
 }
 
+void imports_instantiate(wasm_instance_t *module_inst) {
+  return;
+}
+
 // Instantiate a wasm module, including dynamic components
 wasm_instance_t module_instantiate(wasm_module_t *module) {
   wasm_instance_t module_inst;
@@ -408,6 +422,7 @@ wasm_instance_t module_instantiate(wasm_module_t *module) {
   data_instantiate(&module_inst, module);
   globals_instantiate(&module_inst, module);
   table_instantiate(&module_inst, module);
+  imports_instantiate(&module_inst);
 
   startup_instantiate(&module_inst, module);
 
@@ -466,8 +481,30 @@ void module_free(wasm_module_t* mod) {
 
 /* Native Import function sequence */
 wasm_value_t invoke_native_function(wasm_instance_t *inst, wasm_value_t* ptr, 
-      uint32_t num_params, uint32_t num_results) {
-  return wasm_i32_value(1);
+      wasm_import_decl_t *import, wasm_sig_decl_t *sig) {
+  if (strcmp(import->mod_name, "weewasm")) {
+    ERR("Invalid import module \'%s\' for %s\n", import->mod_name, import->member_name);
+  }
+  uint32_t num_params = sig->num_params;
+  uint32_t num_results = sig->num_results;
+
+  wasm_value_t result = wasm_ref_value(NULL);
+  IMPORT_CHECK_CALL("obj.new",      ref, native_obj_new,        0);
+  IMPORT_CHECK_CALL("obj.box_i32",  ref, native_obj_box_i32,    1, i32);
+  IMPORT_CHECK_CALL("obj.box_f64",  ref, native_obj_box_f64,    1, f64);
+
+  IMPORT_CHECK_CALL("obj.get",      ref, native_obj_get,        2, ref, ref);
+  IMPORT_CHECK_CALL("obj.set",      ref, native_obj_set,        3, ref, ref, ref);
+
+  IMPORT_CHECK_CALL("i32.unbox",    i32, native_i32_unbox,      1, ref);
+  IMPORT_CHECK_CALL("f64.unbox",    f64, native_f64_unbox,      1, ref);
+  
+  IMPORT_CHECK_CALL("obj.eq",       i32, native_obj_eq,         2, ref, ref);
+
+  if (result.tag == EXTERNREF && result.val.ref == NULL) {
+    ERR("Could not find import function: \'%s\':\'%s\'\n", import->mod_name, import->member_name);
+  }
+  return result;
 }
 
 
@@ -678,11 +715,11 @@ start_init:
     wasm_func_decl_t *call_fn = &inst->module->funcs[next_fn_idx];
     /* If it is an import, call function and push result on stack */
     if (next_fn_idx < inst->module->num_imports) {
-      uint32_t num_params = call_fn->sig->num_params;
-      uint32_t num_results = call_fn->sig->num_results;
-      top -= num_params;
-      wasm_value_t result = invoke_native_function(inst, top, num_params, num_results);
-      if (num_results != 0) {
+      wasm_import_decl_t* import = &inst->module->imports[next_fn_idx];
+      wasm_sig_decl_t* sig = call_fn->sig;
+      top -= sig->num_params;
+      wasm_value_t result = invoke_native_function(inst, top, import, sig);
+      if (sig->num_results != 0) {
         PUSH(result);
       }
     }
@@ -727,11 +764,11 @@ start_init:
 
     /* If it is an import, call function and push result on stack */
     if (next_fn_idx < inst->module->num_imports) {
-      uint32_t num_params = call_fn->sig->num_params;
-      uint32_t num_results = call_fn->sig->num_results;
-      top -= num_params;
-      wasm_value_t result = invoke_native_function(inst, top, num_params, num_results);
-      if (num_results != 0) {
+      wasm_import_decl_t* import = &inst->module->imports[next_fn_idx];
+      wasm_sig_decl_t* sig = call_fn->sig;
+      top -= sig->num_params;
+      wasm_value_t result = invoke_native_function(inst, top, import, sig);
+      if (sig->num_results != 0) {
         PUSH(result);
       }
     }
