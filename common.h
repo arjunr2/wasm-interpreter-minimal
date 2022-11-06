@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef uint8_t byte;
 
