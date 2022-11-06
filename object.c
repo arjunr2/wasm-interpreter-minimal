@@ -9,7 +9,7 @@
 static intptr_t hash_object(Object *obj) {
   intptr_t key;
   switch(obj->type) {
-    case OBJECT:  key = obj; break;
+    case OBJECT:  key = (intptr_t) obj; break;
     case BOX_I32: key = obj->val.i32; break;
     case BOX_F64: memcpy(&key, &obj->val.f64, sizeof(intptr_t)); break;
   }
@@ -24,11 +24,10 @@ static intptr_t hash_object(Object *obj) {
   return key;
 }
 
-static link_item_t* ht_find_internal(HashTable *ht, Object *key, intptr_t* hash_ret) {
+static link_item_t* ht_find_internal(HashTable *ht, Object *key) {
   intptr_t hash = hash_object(key);
   /* Note: Only power of 2 capacities */
   uint32_t hash_idx = hash & (ht->cap - 1);
-  *hash_ret = hash;
 
   link_item_t* head = ht->buckets[hash_idx];
   while (head != NULL) {
@@ -39,6 +38,23 @@ static link_item_t* ht_find_internal(HashTable *ht, Object *key, intptr_t* hash_
   }
   return NULL;
 }
+
+static void ht_insert_internal(link_item_t **buckets, Object *key, Object *val, uint32_t cap) {
+  intptr_t hash = hash_object(key);
+  /* Note: Only power of 2 capacities */
+  uint32_t hash_idx = hash & (cap - 1);
+
+  link_item_t **bucket = buckets + hash_idx;
+
+  link_item_t* new_elem = (link_item_t*) malloc(sizeof(link_item_t));
+  new_elem->next = *bucket;
+  *bucket = new_elem;
+
+  new_elem->hash = hash;
+  new_elem->key = key;
+  new_elem->val = val;
+}
+
 
 /* Create an object with specific type; data uninitialized */
 Object* create_object(obj_type_t type) {
@@ -70,34 +86,34 @@ void ht_init(HashTable *ht) {
 }
 
 
-// TODO
 void ht_grow(HashTable *ht) {
   uint32_t new_cap = ht->cap * 2;
   link_item_t** new_buckets = (link_item_t**) calloc(new_cap, sizeof(link_item_t*));
   // Rehash all elements from old buckets
+  for (uint32_t i = 0; i < ht->cap; i++) {
+    link_item_t *head = ht->buckets[i];
+    while (head != NULL) {
+      intptr_t hash = hash_object(head->key);
+      ht_insert_internal(new_buckets, head->key, head->val, new_cap);
+      head = head->next;
+    }
+  }
+
+  ht->buckets = new_buckets;
+  ht->cap = new_cap;
 }
 
 
 void ht_insert(HashTable *ht, Object *key, Object *val) {
-  intptr_t hash;
-  link_item_t *result = ht_find_internal(ht, key, &hash);
-  /* Note: Only power of 2 capacities */
-  uint32_t hash_idx = hash & (ht->cap - 1);
-  link_item_t **bucket = ht->buckets + hash_idx;
+  link_item_t *result = ht_find_internal(ht, key);
 
   if (result != NULL) {
     /* Overwrite object */
     result->val = val;
   } else {
+    if (((ht->num_elems*100)/ht->cap) > LOAD_FACTOR) { ht_grow(ht); }
     /* Insert new element */
-    link_item_t* new_elem = (link_item_t*) malloc(sizeof(link_item_t));
-    new_elem->next = *bucket;
-    *bucket = new_elem;
-
-    new_elem->hash = hash;
-    new_elem->key = key;
-    new_elem->val = val;
-
+    ht_insert_internal(ht->buckets, key, val, ht->cap);
     ht->num_elems++;
   }
 }
@@ -105,7 +121,7 @@ void ht_insert(HashTable *ht, Object *key, Object *val) {
 
 Object* ht_find(HashTable *ht, Object *key) {
   intptr_t hash;
-  link_item_t *result = ht_find_internal(ht, key, &hash);
+  link_item_t *result = ht_find_internal(ht, key);
   if (result != NULL) {
     return result->val;
   }
