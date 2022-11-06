@@ -1,12 +1,19 @@
 #include "object.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define INITIAL_CAP 16
 #define LOAD_FACTOR 60
 
-static intptr_t hash64shift(intptr_t key)
-{
+static intptr_t hash_object(Object *obj) {
+  intptr_t key;
+  switch(obj->type) {
+    case OBJECT:  key = obj; break;
+    case BOX_I32: key = obj->val.i32; break;
+    case BOX_F64: memcpy(&key, &obj->val.f64, sizeof(intptr_t)); break;
+  }
+
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
   key = (key + (key << 3)) + (key << 8); // key * 265
@@ -17,6 +24,21 @@ static intptr_t hash64shift(intptr_t key)
   return key;
 }
 
+static link_item_t* ht_find_internal(HashTable *ht, Object *key, intptr_t* hash_ret) {
+  intptr_t hash = hash_object(key);
+  /* Note: Only power of 2 capacities */
+  uint32_t hash_idx = hash & (ht->cap - 1);
+  *hash_ret = hash;
+
+  link_item_t* head = ht->buckets[hash_idx];
+  while (head != NULL) {
+    if (head->hash == hash) {
+      if (object_eq(head->key, key)) { return head; }
+    }
+    head = head->next;
+  }
+  return NULL;
+}
 
 /* Create an object with specific type; data uninitialized */
 Object* create_object(obj_type_t type) {
@@ -55,13 +77,38 @@ void ht_grow(HashTable *ht) {
   // Rehash all elements from old buckets
 }
 
-// TODO
+
 void ht_insert(HashTable *ht, Object *key, Object *val) {
-  return;
+  intptr_t hash;
+  link_item_t *result = ht_find_internal(ht, key, &hash);
+  /* Note: Only power of 2 capacities */
+  uint32_t hash_idx = hash & (ht->cap - 1);
+  link_item_t **bucket = ht->buckets + hash_idx;
+
+  if (result != NULL) {
+    /* Overwrite object */
+    result->val = val;
+  } else {
+    /* Insert new element */
+    link_item_t* new_elem = (link_item_t*) malloc(sizeof(link_item_t));
+    new_elem->next = *bucket;
+    *bucket = new_elem;
+
+    new_elem->hash = hash;
+    new_elem->key = key;
+    new_elem->val = val;
+
+    ht->num_elems++;
+  }
 }
 
-// TODO
+
 Object* ht_find(HashTable *ht, Object *key) {
+  intptr_t hash;
+  link_item_t *result = ht_find_internal(ht, key, &hash);
+  if (result != NULL) {
+    return result->val;
+  }
   return NULL;
 }
 
@@ -72,7 +119,7 @@ void ht_destroy(HashTable* ht) {
     link_item_t* head = ht->buckets[i];
     while (head != NULL) {
       // Recursively destroy objects
-      if (head->obj.type == OBJECT) { ht_destroy(&head->obj.val.ht); }
+      if (head->val->type == OBJECT) { ht_destroy(&head->val->val.ht); }
       link_item_t* old = head;
       head = head->next;
       free(old);

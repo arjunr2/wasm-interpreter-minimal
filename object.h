@@ -27,7 +27,9 @@ typedef struct {
 } Object;
 
 struct link_item {
-  Object obj;
+  Object *key;
+  Object *val;
+  intptr_t hash;
   struct link_item *next;
 };
 
