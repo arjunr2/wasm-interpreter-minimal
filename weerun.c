@@ -41,7 +41,7 @@
 #define PUSH_FUNCTION_LOCALS() \
   for (uint32_t i = 0; i < fn->num_local_vec; i++) {  \
     for (uint32_t j = 0; j < fn->local_decl[i].count; j++) {  \
-      wasm_value_t local = { .tag = fn->local_decl[i].type }; \
+      wasm_value_t local = { .tag = fn->local_decl[i].type, .val = 0 }; \
       PUSH(local);  \
     } \
   } \
