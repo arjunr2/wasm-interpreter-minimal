@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "common.h"
+#include <stdbool.h>
 
 typedef struct link_item link_item_t;
 
@@ -37,6 +38,8 @@ struct link_item {
 
 Object* create_object();
 uint32_t object_eq(Object* obj1, Object* obj2);
+bool is_type(Object* obj, obj_type_t type);
+bool is_boxed(Object* obj);
 
 void ht_init(HashTable *ht);
 void ht_grow(HashTable *ht);

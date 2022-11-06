@@ -65,7 +65,7 @@ Object* create_object(obj_type_t type) {
 
 /* Check equality of objects */
 uint32_t object_eq(Object* obj1, Object* obj2) {
-  if (obj1 == NULL || obj2 == NULL) { return obj1 == obj2; }
+  if ((obj1 == NULL) || (obj2 == NULL)) { return obj1 == obj2; }
   if (obj1->type != obj2->type) { return 0; }
   switch (obj1->type) {
     case OBJECT: return obj1 == obj2; break;
@@ -76,6 +76,13 @@ uint32_t object_eq(Object* obj1, Object* obj2) {
   }
 }
 
+bool is_type(Object* obj, obj_type_t type) {
+  return (obj->type == type);
+}
+
+bool is_boxed(Object* obj) {
+  return (obj->type != OBJECT);
+}
 
 /* HashTable methods */
 

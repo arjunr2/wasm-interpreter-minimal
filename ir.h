@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include "weewasm.h"
 
+#define TRAP()  \
+  printf("!trap\n");\
+  exit(1);
+
 #define OP_STACK_MAX 4 * 1024 * 1024
 #define CALL_STACK_MAX 1100000
 

@@ -15,9 +15,6 @@
 #include "ir.h"
 #include "native.h"
 
-#define TRAP()  \
-  printf("!trap\n");\
-  exit(1);
 
 /* Debugging macros */
 #define TRACE_LOCAL_LIST() \
@@ -754,7 +751,7 @@ start_init:
     wasm_func_decl_t *call_fn = inst->table[idx];
     next_fn_idx = call_fn - inst->module->funcs;
     // Dynamic type check
-    if (call_fn == NULL || (call_fn->sig_index != type_idx)) { TRAP(); }
+    if ((call_fn == NULL) || (call_fn->sig_index != type_idx)) { TRAP(); }
 
     CALL_ROUTINE();
 

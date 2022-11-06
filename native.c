@@ -77,6 +77,9 @@ wasm_value_t native_obj_get(wasm_value_t obj_ref, wasm_value_t key_ref) {
 
   Object *obj = (Object*) obj_ref.val.ref;
   Object *key = (Object*) key_ref.val.ref;
+  if ((obj == NULL) || (key == NULL) || is_boxed(obj)) {
+    TRAP();
+  }
 
   Object *value = ht_find(&obj->val.ht, key);
   return wasm_ref_value(value);
@@ -89,6 +92,9 @@ wasm_value_t native_obj_set(wasm_value_t obj_ref, wasm_value_t key_ref, wasm_val
   Object *obj = (Object*) obj_ref.val.ref;
   Object *key = (Object*) key_ref.val.ref;
   Object *val = (Object*) val_ref.val.ref;
+  if ((obj == NULL) || (key == NULL) || is_boxed(obj)) {
+    TRAP();
+  }
 
   ht_insert(&obj->val.ht, key, val);
   return wasm_ref_value(NULL);
@@ -99,6 +105,10 @@ wasm_value_t native_i32_unbox(wasm_value_t obj_ref) {
   TRACE("NATIVE: Object i32unbox!\n");
 
   Object *obj = (Object*) obj_ref.val.ref;
+  if ((obj == NULL) || !is_type(obj, BOX_I32)) {
+    TRAP();
+  }
+
   return wasm_i32_value(obj->val.i32);
 }
 
@@ -106,6 +116,10 @@ wasm_value_t native_f64_unbox(wasm_value_t obj_ref) {
   TRACE("NATIVE: Object f64unbox!\n");
 
   Object *obj = (Object*) obj_ref.val.ref;
+  if ((obj == NULL) || !is_type(obj, BOX_F64)) {
+    TRAP();
+  }
+
   return wasm_f64_value(obj->val.f64);
 }
 
