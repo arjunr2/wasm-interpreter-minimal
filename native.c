@@ -6,47 +6,6 @@
 #include "common.h"
 #include "object.h"
 
-/*
-void* native_obj_new(void) {
-  TRACE("NATIVE: Object new!\n");
-  return malloc(1);
-}
-
-void* native_obj_box_i32(uint32_t val) {
-  TRACE("NATIVE: Object boxi32!\n");
-  return malloc(1);
-}
-
-void* native_obj_box_f64(double val) {
-  TRACE("NATIVE: Object boxf64!\n");
-  return malloc(1);
-}
-
-void* native_obj_get(void* obj, void* key) {
-  TRACE("NATIVE: Object get!\n");
-  return malloc(1);
-}
-
-void* native_obj_set(void* obj, void* key, void* val) {
-  TRACE("NATIVE: Object set!\n");
-  return malloc(1);
-}
-
-uint32_t native_i32_unbox(void* obj) {
-  TRACE("NATIVE: Object i32unbox!\n");
-  return 1;
-}
-
-double native_f64_unbox(void* obj) {
-  TRACE("NATIVE: Object f64unbox!\n");
-  return 1;
-}
-
-uint32_t native_obj_eq(void* obj1, void* obj2) {
-  TRACE("NATIVE: Object eq!\n");
-  return 1;
-}
-*/
 
 wasm_value_t native_obj_new(void) {
   TRACE("NATIVE: Object new!\n");

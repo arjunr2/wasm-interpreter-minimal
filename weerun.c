@@ -207,8 +207,13 @@
 #define IMPORT_CHECK_CALL2(name, fn, numparams)  \
   if (!strcmp(import->member_name, name)) { \
     result = fn(EXPAND2_ARGS##numparams()); \
-  } \
+  } 
   
+#define IMPORT_CHECK_CALL2_VOID(name, fn, numparams)  \
+  if (!strcmp(import->member_name, name)) { \
+    fn(EXPAND2_ARGS##numparams()); \
+    is_void_fn = true;  \
+  } 
 
 #define CALL_ROUTINE()  \
     /* If it is an import, call function and push result on stack */  \
@@ -241,7 +246,7 @@
     PUSH_FUNCTION_LOCALS(); \
                       \
     /* Trace debugging */ \
-    TRACE_LOCAL_LIST(); \
+    //TRACE_LOCAL_LIST(); \
   
 
 // Disassembles and runs a wasm module.
@@ -497,31 +502,21 @@ wasm_value_t invoke_native_function(wasm_instance_t *inst, wasm_value_t* ptr,
   uint32_t num_results = sig->num_results;
 
   wasm_value_t result = wasm_ref_value(NULL);
-  //IMPORT_CHECK_CALL("obj.new",      ref, native_obj_new,        0);
-  //IMPORT_CHECK_CALL("obj.box_i32",  ref, native_obj_box_i32,    1, i32);
-  //IMPORT_CHECK_CALL("obj.box_f64",  ref, native_obj_box_f64,    1, f64);
-
-  //IMPORT_CHECK_CALL("obj.get",      ref, native_obj_get,        2, ref, ref);
-  //IMPORT_CHECK_CALL("obj.set",      ref, native_obj_set,        3, ref, ref, ref);
-
-  //IMPORT_CHECK_CALL("i32.unbox",    i32, native_i32_unbox,      1, ref);
-  //IMPORT_CHECK_CALL("f64.unbox",    f64, native_f64_unbox,      1, ref);
-  //
-  //IMPORT_CHECK_CALL("obj.eq",       i32, native_obj_eq,         2, ref, ref);
+  bool is_void_fn = false;
 
   IMPORT_CHECK_CALL2("obj.new",      native_obj_new,        0);
   IMPORT_CHECK_CALL2("obj.box_i32",  native_obj_box_i32,    1);
   IMPORT_CHECK_CALL2("obj.box_f64",  native_obj_box_f64,    1);
 
   IMPORT_CHECK_CALL2("obj.get",      native_obj_get,        2);
-  IMPORT_CHECK_CALL2("obj.set",      native_obj_set,        3);
+  IMPORT_CHECK_CALL2_VOID("obj.set",      native_obj_set,        3);
 
   IMPORT_CHECK_CALL2("i32.unbox",    native_i32_unbox,      1);
   IMPORT_CHECK_CALL2("f64.unbox",    native_f64_unbox,      1);
   
   IMPORT_CHECK_CALL2("obj.eq",       native_obj_eq,         2);
 
-  if (result.tag == EXTERNREF && result.val.ref == NULL) {
+  if (!is_void_fn && (result.tag == EXTERNREF) && (result.val.ref == NULL)) {
     ERR("Could not find import function: \'%s\':\'%s\'\n", import->mod_name, import->member_name);
   }
   return result;
@@ -600,7 +595,7 @@ main_init:
 
   //  Function body locals
   PUSH_FUNCTION_LOCALS();
-  TRACE_LOCAL_LIST();
+  //TRACE_LOCAL_LIST();
 
   // Fetch first opcode
   TARGET_FETCH();
@@ -624,7 +619,7 @@ start_init:
 
   //  Function body locals
   PUSH_FUNCTION_LOCALS();
-  TRACE_LOCAL_LIST();
+  //TRACE_LOCAL_LIST();
 
   // Fetch first opcode
   TARGET_FETCH();
@@ -679,7 +674,7 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_BR_IF) {
-    uint32_t imm = read_u32(buf);
+    int32_t imm = read_u32(buf);
     v1 = POP();
     if (v1.val.i32) { *ip += imm; }
     TARGET_FETCH(); 

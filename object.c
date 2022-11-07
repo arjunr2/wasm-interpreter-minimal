@@ -1,4 +1,5 @@
 #include "object.h"
+#include "common.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +37,7 @@ static link_item_t* ht_find_internal(HashTable *ht, Object *key) {
     }
     head = head->next;
   }
+  TRACE("Object not found!\n");
   return NULL;
 }
 
@@ -95,6 +97,7 @@ void ht_init(HashTable *ht) {
 
 void ht_grow(HashTable *ht) {
   uint32_t new_cap = ht->cap * 2;
+  TRACE("Grow hashtable to %d\n", new_cap);
   link_item_t** new_buckets = (link_item_t**) calloc(new_cap, sizeof(link_item_t*));
   // Rehash all elements from old buckets
   for (uint32_t i = 0; i < ht->cap; i++) {
@@ -118,7 +121,9 @@ void ht_insert(HashTable *ht, Object *key, Object *val) {
     /* Overwrite object */
     result->val = val;
   } else {
-    if (((ht->num_elems*100)/ht->cap) > LOAD_FACTOR) { ht_grow(ht); }
+    if (((ht->num_elems*100)/ht->cap) > LOAD_FACTOR) { 
+      ht_grow(ht); 
+    }
     /* Insert new element */
     ht_insert_internal(ht->buckets, key, val, ht->cap);
     ht->num_elems++;
