@@ -668,7 +668,7 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_BR) { 
-    uint32_t imm = read_u32(buf);
+    int32_t imm = read_u32(buf);
     *ip += imm;
     TARGET_FETCH(); 
   }
