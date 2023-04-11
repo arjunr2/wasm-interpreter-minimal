@@ -1,1 +1,0 @@
-cmd_/home/tc/wasm-interpreter-minimal/kernel/weekernel.mod := { echo  /home/tc/wasm-interpreter-minimal/kernel/kweerun.o /home/tc/wasm-interpreter-minimal/kernel/klib.o /home/tc/wasm-interpreter-minimal/kernel/test.o /home/tc/wasm-interpreter-minimal/kernel/common.o /home/tc/wasm-interpreter-minimal/kernel/ir.o;  echo; } > /home/tc/wasm-interpreter-minimal/kernel/weekernel.mod

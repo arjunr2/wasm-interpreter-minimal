@@ -15,3 +15,5 @@ int init_module(void) {
 void cleanup_module(void) {
 	printk(KERN_INFO "Cleanup WASM runtime\n");
 }
+
+MODULE_LICENSE("GPL");

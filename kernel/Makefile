@@ -3,7 +3,7 @@
 SRC_C := kweerun.c klib.c test.c common.c ir.c
 
 obj-m += weekernel.o
-ccflags-y := -std=gnu99 -msoft-float -Wno-declaration-after-statement
+ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 weekernel-objs := $(SRC_C:.c=.o)
 
 all:
