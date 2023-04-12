@@ -19,6 +19,10 @@ typedef uint8_t byte;
   }
 
 
+#define FP_U64_BITS(val) ({	\
+		(union { double d; uint64_t u; }) {val}.u;	\
+		})
+
 // Limit file size to something reasonable.
 #define MAX_FILE_SIZE 2000000000
 

@@ -2,25 +2,27 @@
 #include "common.h"
 
 wasm_value_t parse_wasm_value(char* str) {
-  //int len = strlen(str);
-  //if (len > 0) {
-  //  if (str[len-1] == 'd' || str[len-1] == 'D') {
-  //    // treat the input as a double
-  //    char* end = NULL;
-  //    double result = strtod(str, &end);
-  //    if (end == (str + len - 1)) return wasm_f64_value(result);
-  //  } else {
-  //    // treat the input as an integer
-  //    char* end = NULL;
-  //    long result = strtol(str, &end, 10);
-  //    if (end == (str + len)) return wasm_i32_value(result);
-  //  }
-  //}
-  //wasm_value_t orig_string = {
-  //  .tag = EXTERNREF,
-  //  .val.ref = str,
-  //};
-	wasm_value_t orig_string = { .tag = EXTERNREF, .val.ref = str };
+  int len = strlen(str);
+  if (len > 0) {
+    if (str[len-1] == 'd' || str[len-1] == 'D') {
+      // treat the input as a double
+      char* end = NULL;
+      //double result = strtod(str, &end);
+			double result = 1.53;
+      if (end == (str + len - 1)) return wasm_f64_value(result);
+    } else {
+      // treat the input as an integer
+      long result;
+			if (!kstrtol(str, 10, &result)) {
+				//if (end == (str + len)) return wasm_i32_value(result);
+				return wasm_i32_value(result);
+			}
+    }
+  }
+  wasm_value_t orig_string = {
+    .tag = EXTERNREF,
+    .val.ref = str,
+  };
   return orig_string;
 }
 

@@ -6,6 +6,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/types.h>
+#include <asm/fpu/api.h>
+//#include <asm/fpu/internal.h>
 
 #include "common.h"
 #include "ir.h"
@@ -311,43 +313,43 @@ int test_u64ext(void) {
   return 1;
 }
 
-//int wasm_value_equal(wasm_value_t a, wasm_value_t b) {
-//  if (a.tag != b.tag) return 0;
-//  switch (a.tag) {
-//  case I32: return a.val.i32 == b.val.i32;
-//  case F64: return a.val.f64 == b.val.f64;
-//  case EXTERNREF: return a.val.ref == b.val.ref;
-//  default:
-//    return 0;
-//  }
-//}
-//
-//#define CHECK_WASM_PARSE(str, val) do {			\
-//    wasm_value_t expected = val;			\
-//    wasm_value_t got = parse_wasm_value(str);		\
-//    if (!wasm_value_equal(expected, got)) {		\
-//      pr_info("expected: ");				\
-//      print_wasm_value(expected);			\
-//      pr_info(", got: ");				\
-//      print_wasm_value(got);				\
-//      pr_info("\n");					\
-//    }							\
-//  } while(0)
-//
-//
-//int test_parse_i32(void) {
-//  CHECK_WASM_PARSE("44", wasm_i32_value(44));
-//  CHECK_WASM_PARSE("-99", wasm_i32_value(-99));
-//  CHECK_WASM_PARSE("-2299", wasm_i32_value(-2299));
-//  CHECK_WASM_PARSE("333399", wasm_i32_value(333399));
-//  CHECK_WASM_PARSE("4444499", wasm_i32_value(4444499));
-//  CHECK_WASM_PARSE("-2147483648", wasm_i32_value(-2147483648));
-//  CHECK_WASM_PARSE("2147483647", wasm_i32_value(2147483647));
-//  CHECK_WASM_PARSE("3000000000", wasm_i32_value(0xB2D05E00));
-//  CHECK_WASM_PARSE("4294967295", wasm_i32_value(0xFFFFFFFF));
-//  return 1;
-//}
-//
+int wasm_value_equal(wasm_value_t a, wasm_value_t b) {
+  if (a.tag != b.tag) return 0;
+  switch (a.tag) {
+  case I32: return a.val.i32 == b.val.i32;
+  case F64:	return FP_U64_BITS(a.val.f64) == FP_U64_BITS(b.val.f64);
+  case EXTERNREF: return a.val.ref == b.val.ref;
+  default:
+    return 0;
+  }
+}
+
+#define CHECK_WASM_PARSE(str, val) do {			\
+    wasm_value_t expected = val;			\
+    wasm_value_t got = parse_wasm_value(str);		\
+    if (!wasm_value_equal(expected, got)) {		\
+      pr_info("expected: ");				\
+      print_wasm_value(expected);			\
+      pr_info(", got: ");				\
+      print_wasm_value(got);				\
+      pr_info("\n");					\
+    }							\
+  } while(0)
+
+
+int test_parse_i32(void) {
+  CHECK_WASM_PARSE("44", wasm_i32_value(44));
+  CHECK_WASM_PARSE("-99", wasm_i32_value(-99));
+  CHECK_WASM_PARSE("-2299", wasm_i32_value(-2299));
+  CHECK_WASM_PARSE("333399", wasm_i32_value(333399));
+  CHECK_WASM_PARSE("4444499", wasm_i32_value(4444499));
+  CHECK_WASM_PARSE("-2147483648", wasm_i32_value(-2147483648));
+  CHECK_WASM_PARSE("2147483647", wasm_i32_value(2147483647));
+  CHECK_WASM_PARSE("3000000000", wasm_i32_value(0xB2D05E00));
+  CHECK_WASM_PARSE("4294967295", wasm_i32_value(0xFFFFFFFF));
+  return 1;
+}
+
 //int test_parse_f64(void) {
 //  CHECK_WASM_PARSE("0d", wasm_f64_value(0.0));
 //  CHECK_WASM_PARSE("0D", wasm_f64_value(0.0));
@@ -356,16 +358,16 @@ int test_u64ext(void) {
 //  CHECK_WASM_PARSE("3.44e-43D", wasm_f64_value(3.44e-43));
 //  return 1;
 //}
-//
-//int test_parse_ref(void) {
-//  char* string1 = "foobar";
-//  CHECK_WASM_PARSE(string1, wasm_ref_value(string1));
-//  char* string2 = "133foobar";
-//  CHECK_WASM_PARSE(string2, wasm_ref_value(string2));
-//  char* string3 = "foobard";
-//  CHECK_WASM_PARSE(string3, wasm_ref_value(string3));
-//  return 1;
-//}
+
+int test_parse_ref(void) {
+  char* string1 = "foobar";
+  CHECK_WASM_PARSE(string1, wasm_ref_value(string1));
+  char* string2 = "133foobar";
+  CHECK_WASM_PARSE(string2, wasm_ref_value(string2));
+  char* string3 = "foobard";
+  CHECK_WASM_PARSE(string3, wasm_ref_value(string3));
+  return 1;
+}
 
 test_t all_tests[] = {
   {"i32leb", test_i32},
@@ -376,9 +378,9 @@ test_t all_tests[] = {
   {"i64leb_ext", test_i64ext},
   {"u64leb", test_u64},
   {"u64leb_ext", test_u64ext},
-//  {"parse_i32", test_parse_i32},
+  {"parse_i32", test_parse_i32},
 //  {"parse_f64", test_parse_f64},
-//  {"parse_ref", test_parse_ref},
+  {"parse_ref", test_parse_ref},
 };
 
 //================================================================================
