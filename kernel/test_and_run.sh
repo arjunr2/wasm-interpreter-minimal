@@ -1,9 +1,11 @@
 #!/bin/bash
 
+kmod_name=wasmkernel
+
 make
-insmod ./weekernel.ko
+insmod ./$kmod_name.ko
 sleep 1
-rmmod weekernel
+rmmod $kmod_name
 
 dmesg
 make clean

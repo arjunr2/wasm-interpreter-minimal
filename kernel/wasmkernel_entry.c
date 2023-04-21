@@ -14,7 +14,6 @@
 
 int __init startup_runtime(void) {
 	printk(KERN_INFO "Starting WASM runtime\n");
-	//run_tests();
 	const byte* start, end;
 	wasm_module_t module = {0};
 	buffer_t buf = {
