@@ -57,7 +57,7 @@ void decode_custom_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 
 
 /* Decode all sections in WebAssembly binary */
-int decode_sections(wasm_module_t* module, buffer_t buf) {
+int decode_sections(wasm_module_t* module, buffer_t *buf) {
 
 	uint32_t magic = RD_U32_RAW();
 	if (magic != WASM_MAGIC) {
@@ -71,12 +71,12 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
 		return RET_ERR;
 	}
 
-	while (buf.ptr < buf.end) {
+	while (buf->ptr < buf->end) {
 		wasm_section_t section_id = (wasm_section_t) RD_BYTE();
 		uint32_t len = RD_U32();
 
 		TRACE("Found section \"%s\", len: %d\n", wasm_section_name(section_id), len);
-    buffer_t cbuf = {buf.ptr, buf.ptr, buf.ptr + len};
+    buffer_t cbuf = {buf->ptr, buf->ptr, buf->ptr + len};
 
     #define DECODE_CALL(sec)  decode_##sec##_section (module, &cbuf, len); break;
     switch (section_id) {
@@ -101,13 +101,13 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
     if (cbuf.ptr != cbuf.end) {
       ERR("Section \"%s\" not aligned after parsing -- start:%lu, ptr:%lu, end:%lu\n",
           wasm_section_name(section_id),
-          cbuf.start - buf.start,
-          cbuf.ptr - buf.start,
-          cbuf.end - buf.start);
+          cbuf.start - buf->start,
+          cbuf.ptr - buf->start,
+          cbuf.end - buf->start);
 			return RET_ERR;
     }
     // Advance section
-    buf.ptr = cbuf.ptr;
+    buf->ptr = cbuf.ptr;
 	}
 
   return RET_SUCCESS;
@@ -115,13 +115,14 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
 
 
 int parse(wasm_module_t *module, buffer_t buf) {
-	if (decode_sections(module, buf) == -1) {
+  buffer_t fbuf = buf;
+	if (decode_sections(module, &fbuf) == -1) {
     return RET_ERR;
   }
-	if (buf.ptr != buf.end) {
+	if (fbuf.ptr != fbuf.end) {
 		ERR("Unexpected end | Cur -- 0x%lu ; End -- 0x%lu\n", 
-				buf.ptr - buf.start,
-				buf.end - buf.start);
+				fbuf.ptr - fbuf.start,
+				fbuf.end - fbuf.start);
 		return RET_ERR;
 	}
 	return 0;
