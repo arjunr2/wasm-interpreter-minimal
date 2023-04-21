@@ -6,7 +6,7 @@
 #define WASM_MAGIC 0x6d736100u
 #define WASM_VERSION 1
 
-#define PAGE_SIZE 65536
+#define WASM_PAGE_SIZE 65536
 
 /* Section constants */
 typedef enum {
@@ -44,6 +44,7 @@ typedef enum {
   WASM_TYPE_FUNC = 0x60
 } wasm_type_t;
 
+
 /* Kind decoding */
 typedef enum {
   KIND_FUNC = WASM_DESC_FUNC, 
@@ -56,6 +57,15 @@ static inline bool isReftype(wasm_type_t type) {
   return (type == WASM_TYPE_EXTERNREF) || (type == WASM_TYPE_FUNCREF);
 }
 
+
+typedef struct {
+  wasm_type_t tag;
+  union {
+    uint32_t i32;
+    double f64;
+    void* ref;
+  } val;
+} wasm_value_t;
 
 /* Opcode immediate types */
 typedef enum {

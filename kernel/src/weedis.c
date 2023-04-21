@@ -8,7 +8,6 @@
 #include "weedis.h"
 #include "vm.h"
 #include "test.h"
-#include "weewasm.h"
 #include "illegal.h"
 
 #define FN_MAX_SIZE 1048576

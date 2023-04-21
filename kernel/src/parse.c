@@ -3,43 +3,61 @@
 
 
 void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_import_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_function_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_table_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_memory_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_global_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_export_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
 void decode_start_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-
+  buf->ptr += len;
 }
 
-void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+void decode_element_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+  buf->ptr += len;
+}
 
+void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+  buf->ptr += len;
+}
+
+void decode_data_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+  buf->ptr += len;
+}
+
+void decode_datacount_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+  buf->ptr += len;
+}
+
+void decode_custom_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
+  buf->ptr += len;
 }
 
 
-int decode_sections(wasm_module_t* module, buffer_t *buf) {
+
+/* Decode all sections in WebAssembly binary */
+int decode_sections(wasm_module_t* module, buffer_t buf) {
 
 	uint32_t magic = RD_U32_RAW();
 	if (magic != WASM_MAGIC) {
@@ -53,7 +71,7 @@ int decode_sections(wasm_module_t* module, buffer_t *buf) {
 		return -1;
 	}
 
-	while (buf.ptr < buf_end) {
+	while (buf.ptr < buf.end) {
 		wasm_section_t section_id = (wasm_section_t) RD_BYTE();
 		uint32_t len = RD_U32();
 
@@ -91,19 +109,18 @@ int decode_sections(wasm_module_t* module, buffer_t *buf) {
     // Advance section
     buf.ptr = cbuf.ptr;
 	}
+
+  return 0;
 }
 
 
-int parse(wasm_module_t *module, buffer_t *buf) {
-
+int parse(wasm_module_t *module, buffer_t buf) {
 	int res = decode_sections(module, buf);
-
-	if (buf->ptr != buf->end) {
-		ERR("Unexpected end | Cur -- 0x%p ; End -- 0x%p\n", 
-				buf->ptr - buf->start,
-				buf->end - buf->start);
+	if (buf.ptr != buf.end) {
+		ERR("Unexpected end | Cur -- 0x%lu ; End -- 0x%lu\n", 
+				buf.ptr - buf.start,
+				buf.end - buf.start);
 		return -1;
 	}
-	
 	return 0;
 }

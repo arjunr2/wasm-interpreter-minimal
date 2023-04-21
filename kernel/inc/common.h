@@ -38,6 +38,37 @@ extern int g_disassemble;
 		(union { double d; uint64_t u; }) {val}.u;	\
 		})
 
+/*** Parsing macros ***/
+#define RD_U32()        read_u32leb(&buf)
+#define RD_I32()        read_i32leb(&buf)
+#define RD_U64()        read_u64leb(&buf)
+#define RD_I64()        read_i64leb(&buf)
+#define RD_NAME()       read_name(&buf)
+#define RD_BYTESTR(len) read_bytes(&buf, len)
+
+#define RD_BYTE()       read_u8(&buf)
+#define RD_U32_RAW()    read_u32(&buf)
+#define RD_U64_RAW()    read_u64(&buf)
+
+#define VALIDATE_OP(b) {  \
+  opcode_entry_t op_entry = opcode_table[b]; \
+  if (op_entry.invalid || (op_entry.mnemonic == 0)) { \
+    ERR("Unimplemented opcode %d: %s\n", b, op_entry.mnemonic);  \
+    throw std::runtime_error("Unimplemented");  \
+  } \
+}
+
+#define RD_OPCODE() ({  \
+  uint16_t lb = RD_BYTE();  \
+  VALIDATE_OP(lb); \
+  if ((lb >= 0xFB) && (lb <= 0xFE)) {  \
+    lb = ((lb << 8) + RD_BYTE()); \
+    VALIDATE_OP(lb); \
+  } \
+  lb; \
+})
+/********************/
+
 
 // Limit file size to something reasonable.
 #define MAX_FILE_SIZE 2000000000

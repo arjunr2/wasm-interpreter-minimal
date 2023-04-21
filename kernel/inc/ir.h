@@ -1,7 +1,8 @@
 #pragma once
 
 #include <linux/types.h>
-#include "weewasm.h"
+#include "wasmdefs.h"
+#include "common.h"
 
 #define TRAP()  \
   printf("!trap\n");\
@@ -33,31 +34,7 @@
 #define POP_FRAME()         (--frame)
 #define PUSH_FRAME(value)   (*(frame++) = value)
 
-
-typedef uint8_t byte;
-
-typedef enum {
-  I32 = WASM_TYPE_I32, 
-  F64 = WASM_TYPE_F64, 
-  EXTERNREF = WASM_TYPE_EXTERNREF,
-  FUNCREF = WASM_TYPE_FUNCREF
-} wasm_type_t;
-
-typedef enum {
-  FUNC = WASM_IE_DESC_FUNC, 
-  GLOBAL = WASM_IE_DESC_GLOBAL, 
-  TABLE = WASM_IE_DESC_TABLE, 
-  MEMORY = WASM_IE_DESC_MEM
-} wasm_kind_t;
-
-typedef struct {
-  wasm_type_t tag;
-  union {
-    uint32_t i32;
-    double f64;
-    void* ref;
-  } val;
-} wasm_value_t;
+const char* wasm_section_name(byte code);
 
 wasm_value_t parse_wasm_value(char* string);
 void print_wasm_value(wasm_value_t val);

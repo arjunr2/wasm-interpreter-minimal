@@ -9,7 +9,6 @@
 #include "common.h"
 #include "weedis.h"
 #include "test.h"
-#include "weewasm.h"
 #include "ir.h"
 #include "native.h"
 
@@ -264,7 +263,7 @@ int parse(wasm_module_t* module, buffer_t* buf);
 void memory_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
   uint32_t num_pages = module->mem_limits.initial ? module->mem_limits.initial : 1;
 
-  uint32_t init_mem_size = PAGE_SIZE * num_pages;
+  uint32_t init_mem_size = WASM_PAGE_SIZE * num_pages;
 
   MALLOC(memory, byte, init_mem_size);
 

@@ -316,9 +316,9 @@ int test_u64ext(void) {
 int wasm_value_equal(wasm_value_t a, wasm_value_t b) {
   if (a.tag != b.tag) return 0;
   switch (a.tag) {
-  case I32: return a.val.i32 == b.val.i32;
-  case F64:	return FP_U64_BITS(a.val.f64) == FP_U64_BITS(b.val.f64);
-  case EXTERNREF: return a.val.ref == b.val.ref;
+  case WASM_TYPE_I32: return a.val.i32 == b.val.i32;
+  case WASM_TYPE_F64:	return FP_U64_BITS(a.val.f64) == FP_U64_BITS(b.val.f64);
+  case WASM_TYPE_EXTERNREF: return a.val.ref == b.val.ref;
   default:
     return 0;
   }
