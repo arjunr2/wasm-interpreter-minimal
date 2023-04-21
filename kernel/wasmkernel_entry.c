@@ -6,14 +6,23 @@
 
 #include "test.h"
 #include "parse.h"
+#include "sample_files.h"
 
+#define TEST_NAME add0_wasm
+#define LEN(tname) LEN_(tname)
+#define LEN_(tname) tname##_len
 
 int __init startup_runtime(void) {
 	printk(KERN_INFO "Starting WASM runtime\n");
 	//run_tests();
 	const byte* start, end;
 	wasm_module_t module = {0};
-	buffer_t buf;
+	buffer_t buf = {
+    TEST_NAME,
+    TEST_NAME,
+    TEST_NAME + LEN(TEST_NAME)
+  };
+
 	int result = parse(&module, buf);
 	if (result < 0) {
 		ERR("Error parsing module | Return: %d\n", result);

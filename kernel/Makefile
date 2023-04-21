@@ -1,10 +1,10 @@
 .PHONY: all clean
 
-SRC_C := weekernel_entry.c src/parse.c src/test.c src/common.c src/ir.c
+SRC_C := wasmkernel_entry.c src/parse.c src/test.c src/common.c src/ir.c
 
-obj-m += weekernel.o
+obj-m += wasmkernel.o
 ccflags-y := -std=gnu99 -I$(src)/inc -I$(src) -Wno-declaration-after-statement
-weekernel-objs := $(SRC_C:.c=.o)
+wasmkernel-objs := $(SRC_C:.c=.o)
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

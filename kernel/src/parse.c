@@ -62,13 +62,13 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
 	uint32_t magic = RD_U32_RAW();
 	if (magic != WASM_MAGIC) {
 		ERR("MAGIC incorrect: %u\n", magic);
-		return -1;
+		return RET_ERR;
 	}
 
 	uint32_t version = RD_U32_RAW();
 	if (version != WASM_VERSION) {
 		ERR("VERSION value incorrect: %u\n", version);
-		return -1;
+		return RET_ERR;
 	}
 
 	while (buf.ptr < buf.end) {
@@ -95,7 +95,7 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
       case WASM_SECT_CUSTOM:    DECODE_CALL(custom);
       default:
         ERR("Unknown section id: %u\n", section_id);
-				return -1;
+				return RET_ERR;
     }
 
     if (cbuf.ptr != cbuf.end) {
@@ -104,23 +104,25 @@ int decode_sections(wasm_module_t* module, buffer_t buf) {
           cbuf.start - buf.start,
           cbuf.ptr - buf.start,
           cbuf.end - buf.start);
-			return -1;
+			return RET_ERR;
     }
     // Advance section
     buf.ptr = cbuf.ptr;
 	}
 
-  return 0;
+  return RET_SUCCESS;
 }
 
 
 int parse(wasm_module_t *module, buffer_t buf) {
-	int res = decode_sections(module, buf);
+	if (decode_sections(module, buf) == -1) {
+    return RET_ERR;
+  }
 	if (buf.ptr != buf.end) {
 		ERR("Unexpected end | Cur -- 0x%lu ; End -- 0x%lu\n", 
 				buf.ptr - buf.start,
 				buf.end - buf.start);
-		return -1;
+		return RET_ERR;
 	}
 	return 0;
 }
