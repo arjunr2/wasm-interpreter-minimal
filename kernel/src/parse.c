@@ -10,6 +10,29 @@ static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
   }
   return types;
 }
+
+/* Read LimitsType */
+wasm_limits_t read_limits(buffer_t *buf) {
+  byte has_max = RD_BYTE();
+  /* Min */
+  uint32_t initial = RD_U32();
+  uint32_t max = has_max ? RD_U32() : -1;
+
+  wasm_limits_t limits = { .initial = initial, .max = max, .has_max = has_max };
+  return limits;
+}
+
+/* Read TableType */
+static void read_table_type(wasm_table_decl_t *table, buffer_t *buf) {
+  byte reftype = RD_BYTE();
+  if ((reftype != WASM_TYPE_FUNCREF) && (reftype != WASM_TYPE_EXTERNREF)) {
+    ERR("Invalid table reftype: %d\n", reftype);
+    return;
+  }
+  table->limits = read_limits(buf);
+}
+
+
 void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   uint32_t num_types = RD_U32();
   MALLOC(sigs, wasm_sig_decl_t, num_types);
@@ -59,7 +82,6 @@ void decode_import_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 
 void decode_function_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   uint32_t num_funcs = RD_U32();
-  
   uint32_t num_imports = module->num_imports;
 
   MALLOC(funcs, wasm_func_decl_t, num_imports + num_funcs);
@@ -82,11 +104,27 @@ void decode_function_section(wasm_module_t *module, buffer_t *buf, uint32_t len)
 }
 
 void decode_table_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_tabs = RD_U32();
+
+  MALLOC(tables, wasm_table_decl_t, num_tabs);
+
+  for (uint32_t i = 0; i < num_tabs; i++) {
+    read_table_type(&tables[i], buf);
+  }
+
+  module->num_tables = num_tabs;
+  module->table = tables;
 }
 
 void decode_memory_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_mems = read_u32leb(buf);
+  if (num_mems != 1) {
+    ERR("Memory component has to be 1!\n");
+    return;
+  }
+
+  module->num_mems = num_mems;
+  module->mem_limits = read_limits(buf);
 }
 
 void decode_global_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
