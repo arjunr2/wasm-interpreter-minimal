@@ -17,7 +17,7 @@ void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   for (uint32_t i = 0; i < num_types; i++) {
     wasm_sig_decl_t *sig = &sigs[i];
     byte kind = RD_BYTE();
-    if (kind != KIND_FUNC) {
+    if (kind != WASM_TYPE_FUNC) {
       ERR("Signature must be func-type (0x60)\n");
       return;
     }
@@ -29,15 +29,56 @@ void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 
   module->num_sigs = num_types;
   module->sigs = sigs;
-  //buf->ptr += len;
 }
 
 void decode_import_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_imports = RD_U32();
+
+  MALLOC(imports, wasm_import_decl_t, num_imports);
+  for (uint32_t i = 0; i < num_imports; i++) {
+    wasm_import_decl_t *import = &imports[i];
+
+    /* Module */
+    /* Import names */
+    import->mod_name = RD_NAME(&import->mod_name_length);
+    import->member_name = RD_NAME(&import->member_name_length);
+
+    /* Import type and args */    
+    import->kind = RD_BYTE();
+    switch(import->kind) {
+      case KIND_FUNC: import->index = RD_U32(); break;
+      default:
+        ERR("Invalid kind for import: %d\n", import->kind);
+    }
+  }
+
+  module->num_imports = num_imports;
+  module->imports = imports;
 }
 
+
 void decode_function_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_funcs = RD_U32();
+  
+  uint32_t num_imports = module->num_imports;
+
+  MALLOC(funcs, wasm_func_decl_t, num_imports + num_funcs);
+
+  for (uint32_t i = 0; i < num_imports; i++) {
+    wasm_func_decl_t *func = &funcs[i];
+    func->sig_index = module->imports[i].index;
+    func->sig = &module->sigs[func->sig_index];
+  }
+  for (uint32_t i = 0; i < num_funcs; i++) {
+    wasm_func_decl_t *func = &funcs[i + num_imports];
+
+    /* Get signature idx */
+    func->sig_index = RD_U32();
+    func->sig = &module->sigs[func->sig_index];
+  }
+
+  module->num_funcs = num_funcs;
+  module->funcs = funcs;
 }
 
 void decode_table_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {

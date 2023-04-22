@@ -43,7 +43,7 @@ extern int g_disassemble;
 #define RD_I32()        read_i32leb(buf)
 #define RD_U64()        read_u64leb(buf)
 #define RD_I64()        read_i64leb(buf)
-#define RD_NAME()       read_name(buf)
+#define RD_NAME(len_ptr)  read_name(buf, len_ptr)
 #define RD_BYTESTR(len) read_bytes(buf, len)
 
 #define RD_BYTE()       read_u8(buf)
@@ -93,21 +93,19 @@ ssize_t load_file(const char* path, byte** start, byte** end);
 ssize_t unload_file(byte** start, byte** end);
 
 
-// Read an unsigned 32-bit LEB, advancing the {ptr} in the buffer.
+/* Read an unsigned(u)/signed(i) X-bit LEB, advancing the {ptr} in buffer */
 uint32_t read_u32leb(buffer_t* buf);
-
-// Read a signed 32-bit LEB, advancing the {ptr} in the buffer.
 int32_t read_i32leb(buffer_t* buf);
+uint64_t read_u64leb(buffer_t* buf);
+int64_t read_i64leb(buffer_t* buf);
 
-// Read an unsigned 8-bit byte, advancing the {ptr} in the buffer.
+/* Read a raw X-bit value, advancing the {ptr} in buffer*/
 uint8_t read_u8(buffer_t* buf);
-
-// Read an unsigned 32-bit int, advancing the {ptr} in the buffer.
 uint32_t read_u32(buffer_t* buf);
-
-// Read a 64-bit unsigned int, advancing the buffer
 uint64_t read_u64(buffer_t* buf);
 
-// Read a string of length n, advancing the buffer
-char* read_string(buffer_t* buf, uint32_t* len);
+/* Read a name (32leb + string), advancing the {ptr} in buffer */
+char* read_name(buffer_t* buf, uint32_t *len);
+/* Read num_bytes, advancing the {ptr} in buffer */
+byte* read_bytes(buffer_t* buf, uint32_t num_bytes);
 

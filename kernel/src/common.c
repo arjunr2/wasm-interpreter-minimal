@@ -72,7 +72,7 @@ uint32_t decode_u32(const uint8_t* ptr, const uint8_t* limit, ssize_t *len) {
 
 
 
-// Read an unsigned 32-bit LEB, advancing the buffer.
+/* Unsigned-32 LEB */
 uint32_t read_u32leb(buffer_t* buf) {
   ssize_t leblen = 0;
   if (buf->ptr >= buf->end) return 0;
@@ -82,7 +82,7 @@ uint32_t read_u32leb(buffer_t* buf) {
   return val;
 }
 
-// Read a signed 32-bit LEB, advancing the buffer.
+/* Signed-32 LEB */
 int32_t read_i32leb(buffer_t* buf) {
   ssize_t leblen = 0;
   if (buf->ptr >= buf->end) return 0;
@@ -92,7 +92,46 @@ int32_t read_i32leb(buffer_t* buf) {
   return val;
 }
 
-// Read a 64-bit unsigned int, advancing the buffer
+/* Unsigned-64 LEB */
+uint64_t read_u64leb(buffer_t* buf) {
+  ssize_t leblen = 0;
+  if (buf->ptr >= buf->end) return 0;
+  uint64_t val = decode_u64leb(buf->ptr, buf->end, &leblen);
+  if (leblen <= 0) buf->ptr = buf->end; // force failure
+  else buf->ptr += leblen;
+  return val;
+}
+
+/* Signed-64 LEB */
+int64_t read_i64leb(buffer_t* buf) {
+  ssize_t leblen = 0;
+  if (buf->ptr >= buf->end) return 0;
+  int64_t val = decode_i64leb(buf->ptr, buf->end, &leblen);
+  if (leblen <= 0) buf->ptr = buf->end; // force failure
+  else buf->ptr += leblen;
+  return val;
+}
+
+/* Raw byte */
+uint8_t read_u8(buffer_t* buf) {
+  if (buf->ptr >= buf->end) {
+    ERR("u8 read out of bounds");
+    return 0;
+  }
+  byte val = *buf->ptr;
+  buf->ptr++;
+  return val;
+}
+
+/* Raw-32 */
+uint32_t read_u32(buffer_t* buf) {
+  ssize_t len;
+  uint32_t val = decode_u32(buf->ptr, buf->ptr + 4, &len);
+  buf->ptr += 4;
+  return val;
+}
+
+/* Raw-64 */
 uint64_t read_u64(buffer_t* buf) {
   ssize_t len = 0;
   if (buf->ptr + 8 > buf->end) {
@@ -107,43 +146,34 @@ uint64_t read_u64(buffer_t* buf) {
   return val;
 }
 
-// Read a string of length n, advancing the buffer
-char* read_string(buffer_t* buf, uint32_t* len) {
-  uint32_t sz = read_u32leb(buf);
+
+/* Name (Unsigned-32leb + string) */
+char* read_name(buffer_t* buf, uint32_t* len) {
+  uint32_t sz = RD_U32();
   if (buf->ptr + sz > buf->end) {
-    ERR("string read out of bounds\n");
+    ERR("String read out of bounds\n");
     return NULL;
   }
-  
-  char *res = (char*) vmalloc((sz + 1) * sizeof(char));
-  memcpy(res, buf->ptr, sz);
-  res[sz] = 0;
 
+  MALLOC (name, char, sz + 1);
+  strncpy (name, buf->ptr, sz);
+  name[sz] = 0;
+ 
   buf->ptr += sz;
-  *len = sz;
-  return res;  
+  return name;  
 
 }
 
-// Read an unsigned 8-bit byte, advancing the buffer.
-uint8_t read_u8(buffer_t* buf) {
-  if (buf->ptr >= buf->end) {
-    ERR("u8 read out of bounds");
-    return 0;
+/* Raw-{num_bytes} */ 
+byte* read_bytes(buffer_t* buf, uint32_t num_bytes) {
+  if (buf->ptr + num_bytes > buf->end) {
+    ERR("bytes read out of bounds\n");
+    return NULL;
   }
-  byte val = *buf->ptr;
-  buf->ptr++;
-  return val;
+  MALLOC (bytes, byte, num_bytes);
+  memcpy (bytes, buf->ptr, num_bytes);
+  return bytes;
 }
-
-// Read an unsigned 32-bit byte, advancing the buffer.
-uint32_t read_u32(buffer_t* buf) {
-  ssize_t len;
-  uint32_t val = decode_u32(buf->ptr, buf->ptr + 4, &len);
-  buf->ptr += 4;
-  return val;
-}
-
 
 
 /*   */
