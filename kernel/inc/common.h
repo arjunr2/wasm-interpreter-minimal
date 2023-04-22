@@ -25,7 +25,7 @@ extern int g_disassemble;
 #define MALLOC(dest, dt, num) \
   dt* dest;  \
   if (num != 0) { \
-    dest = ( dt* ) malloc ((num) * sizeof( dt )); \
+    dest = ( dt* ) vmalloc ((num) * sizeof( dt )); \
   }
 
 #define FREE(val, num)  \

@@ -2,8 +2,34 @@
 #include "wasmdefs.h"
 
 
+static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
+  MALLOC(types, wasm_type_t, num);
+  /* Add all types for params */
+  for (uint32_t j = 0; j < num; j++) {
+    types[j] = RD_BYTE();
+  }
+  return types;
+}
 void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_types = RD_U32();
+  MALLOC(sigs, wasm_sig_decl_t, num_types);
+
+  for (uint32_t i = 0; i < num_types; i++) {
+    wasm_sig_decl_t *sig = &sigs[i];
+    byte kind = RD_BYTE();
+    if (kind != KIND_FUNC) {
+      ERR("Signature must be func-type (0x60)\n");
+      return;
+    }
+    sig->num_params = RD_U32();
+    sig->params = read_type_list(sig->num_params, buf);
+    sig->num_results = RD_U32();
+    sig->results = read_type_list(sig->num_results, buf);
+  }
+
+  module->num_sigs = num_types;
+  module->sigs = sigs;
+  //buf->ptr += len;
 }
 
 void decode_import_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
