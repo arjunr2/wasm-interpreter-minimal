@@ -4,14 +4,21 @@
 #include <linux/init.h>
 #include <linux/module.h>
 
-#include "klib.h"
 #include "test.h"
+#include "common.h"
 
 
 int __init startup_runtime(void) {
 	printk(KERN_INFO "Starting WASM runtime\n");
-	print_lib();
-	run_tests();
+	//run_tests();
+	const byte* start, end;
+	wasm_module_t module = {0};
+	buffer_t buf;
+	int result = parse(&module, &buf);
+	if (result < 0) {
+		ERR("Error parsing module | Return: %d\n", result);
+	}
+
 	return 0;
 }
 

@@ -6,6 +6,21 @@
 #include <linux/string.h>
 
 typedef uint8_t byte;
+typedef struct {
+  const byte* start;
+  const byte* ptr;
+  const byte* end;
+} buffer_t;
+
+
+// The global trace flag.
+extern int g_trace;
+extern int g_disassemble;
+
+// Helper macros to trace and to print errors.
+#define TRACE(...) pr_notice(__VA_ARGS__);
+#define DISASS(...) pr_notice(__VA_ARGS__);
+#define ERR(...) pr_err(__VA_ARGS__)
 
 #define MALLOC(dest, dt, num) \
   dt* dest;  \
@@ -22,6 +37,7 @@ typedef uint8_t byte;
 #define FP_U64_BITS(val) ({	\
 		(union { double d; uint64_t u; }) {val}.u;	\
 		})
+
 
 // Limit file size to something reasonable.
 #define MAX_FILE_SIZE 2000000000
@@ -45,22 +61,6 @@ ssize_t load_file(const char* path, byte** start, byte** end);
 // Unload a file previously loaded into memory using {load_file}.
 ssize_t unload_file(byte** start, byte** end);
 
-// The global trace flag.
-extern int g_trace;
-extern int g_disassemble;
-
-// Helper macros to trace and to print errors.
-#define TRACE(...) do { if(g_trace) pr_notice(__VA_ARGS__); } while(0)
-#define DISASS(...) do { if(g_disassemble) pr_notice(__VA_ARGS__); } while(0)
-#define ERR(...) pr_err(__VA_ARGS__)
-
-// A helper struct that keeps track of the start and the current pointer of
-// a buffer.
-typedef struct {
-  const byte* start;
-  const byte* ptr;
-  const byte* end;
-} buffer_t;
 
 // Read an unsigned 32-bit LEB, advancing the {ptr} in the buffer.
 uint32_t read_u32leb(buffer_t* buf);
@@ -80,22 +80,3 @@ uint64_t read_u64(buffer_t* buf);
 // Read a string of length n, advancing the buffer
 char* read_string(buffer_t* buf, uint32_t* len);
 
-/* String operations */
-typedef struct {
-  char *v;
-  uint32_t cap;
-} string;
-
-string stralloc(void);
-
-string strappend(string s, const char* c);
-
-string strappend_int32(string s, uint32_t val, bool sgn);
-string strappend_byte(string s, byte val);
-string strappend_hex64(string s, uint64_t val);
-
-string strclear(string s);
-
-string strip_chars(string s, int n);
-
-void strdelete(string s);
