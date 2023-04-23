@@ -8,7 +8,7 @@ static int retval = 0;
 void memory_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
   uint32_t num_pages = module->mem_limits.initial ? module->mem_limits.initial : 1;
 
-  uint32_t init_mem_size = PAGE_SIZE * num_pages;
+  uint32_t init_mem_size = WASM_PAGE_SIZE * num_pages;
 
   MALLOC(memory, byte, init_mem_size);
 

@@ -33,6 +33,11 @@
 
 
 
+#define IP_NEW_FUNC() { \
+  *ip = fn->code_start; \
+  buf->start = fn->code_start;  \
+  buf->end = fn->code_end;  \
+}
 /* If it is an import, call function and push result on stack */
 /*
 if (next_fn_idx < inst->module->num_imports) {
@@ -60,14 +65,7 @@ if (next_fn_idx < inst->module->num_imports) {
     fn = call_fn; \
     block_depth = 0;  \
     locals = top - fn->sig->num_params; \
-    *ip = fn->code_start; \
-    { \
-      buffer_t newbuf = { \
-        .start = fn->code_start,  \
-        .end = fn->code_end \
-      };  \
-      *buf = newbuf;  \
-    };  \
+    IP_NEW_FUNC();  \
                       \
     /* Function body locals */  \
     PUSH_FUNCTION_LOCALS(); \
@@ -193,15 +191,7 @@ main_init:
   // Init main frame and jump to code section
   block_depth = 0;
   locals = inst->op_stack_base;
-
-  *ip = fn->code_start;
-  {
-    buffer_t newbuf = {
-      .start = fn->code_start,
-      .end = fn->code_end
-    };
-    *buf = newbuf;
-  };
+  IP_NEW_FUNC();
 
   //  Function body locals
   PUSH_FUNCTION_LOCALS();
@@ -223,14 +213,7 @@ start_init:
   // Init main frame and jump to code section
   block_depth = 0;
   locals = inst->op_stack_base;
-  *ip = fn->code_start;
-  {
-    buffer_t newbuf = {
-      .start = fn->code_start,
-      .end = fn->code_end
-    };
-    *buf = newbuf;
-  };
+  IP_NEW_FUNC();
 
   //  Function body locals
   PUSH_FUNCTION_LOCALS();

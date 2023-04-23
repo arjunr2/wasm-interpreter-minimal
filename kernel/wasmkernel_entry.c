@@ -15,7 +15,7 @@
 #define LEN_(tname) tname##_len
 
 int __init startup_runtime(void) {
-	printk(KERN_INFO "Starting WASM runtime\n");
+	pr_info("Starting WASM runtime\n");
 	buffer_t buf = {
     TEST_NAME,
     TEST_NAME,
@@ -51,7 +51,7 @@ error:
 }
 
 void __exit exit_runtime(void) {
-	printk(KERN_INFO "Exit WASM runtime\n\n");
+	pr_info("Exit WASM runtime\n\n");
 }
 
 module_init(startup_runtime);
