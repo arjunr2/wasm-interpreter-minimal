@@ -317,6 +317,7 @@ void decode_expr(buffer_t *buf, bool replace_last) {
       ERR("Invalid opcode: %d (%s)\n", opcode, entry->mnemonic);
       return;
     }
+    /* Perform branch replacement/logging */
     switch (opcode) {
       case WASM_OP_BLOCK:		/* "block" BLOCKT */
       case WASM_OP_LOOP:			/* "loop" BLOCKT */
@@ -348,8 +349,7 @@ void decode_expr(buffer_t *buf, bool replace_last) {
           break;
       
       default:
-          ERR("UNKNOWN OPCODE -- %u\n", opcode);
-          return;
+          break;
     }
   }
   FREE(dyn2static_idxs, FN_MAX_SIZE);
