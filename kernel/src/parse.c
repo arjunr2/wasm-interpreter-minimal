@@ -1,6 +1,7 @@
 #include "parse.h"
 #include "wasmdefs.h"
 
+/*** Reading intermediate types ***/
 
 static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
   MALLOC(types, wasm_type_t, num);
@@ -12,7 +13,7 @@ static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
 }
 
 /* Read LimitsType */
-wasm_limits_t read_limits(buffer_t *buf) {
+static wasm_limits_t read_limits(buffer_t *buf) {
   byte has_max = RD_BYTE();
   /* Min */
   uint32_t initial = RD_U32();
@@ -32,6 +33,13 @@ static void read_table_type(wasm_table_decl_t *table, buffer_t *buf) {
   table->limits = read_limits(buf);
 }
 
+/* Read GlobalType */
+static void read_global_type(wasm_global_decl_t* global, buffer_t *buf) {
+  global->type = RD_BYTE();
+  global->mutable = RD_BYTE();;
+}
+
+/*** ***/
 
 void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   uint32_t num_types = RD_U32();
@@ -128,7 +136,20 @@ void decode_memory_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 }
 
 void decode_global_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_globs = RD_U32();
+  MALLOC(globals, wasm_global_decl_t, num_globs);
+
+  for (uint32_t i = 0; i < num_globs; i++) {
+    wasm_global_decl_t *global = &globals[i];
+    read_global_type(global, buf);
+
+    global->init_expr_start = buf->ptr;
+    while (RD_BYTE() != WASM_OP_END) { };
+    global->init_expr_end = buf->ptr;
+  }
+
+  module->num_globals = num_globs;
+  module->globals = globals;
 }
 
 void decode_export_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
