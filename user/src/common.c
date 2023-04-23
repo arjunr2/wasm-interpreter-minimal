@@ -110,7 +110,8 @@ int64_t read_i64leb(buffer_t* buf) {
 /* Raw byte */
 uint8_t read_u8(buffer_t* buf) {
   if (buf->ptr >= buf->end) {
-    ERR("u8 read out of bounds");
+    ERR("u8 read out of bounds\n");
+    exit(1);
     return 0;
   }
   byte val = *buf->ptr;

@@ -17,7 +17,7 @@
 #define SCOPE_BEGIN_INSN() \
   ; \
   /* Skip the blocktype */  \
-  uint32_t blocktype = RD_U32();  \
+  int64_t blocktype = RD_I64();  \
   (void)blocktype;  \
   STATIC_BR_START_BLOCK();  \
   scope++;
@@ -101,7 +101,7 @@ static uint32_t decode_flag_and_i32_const_off_expr(buffer_t *buf) {
     return -1;
   } 
   // Offset val
-  uint32_t offset = RD_U32();
+  uint32_t offset = RD_I32();
   
   if (RD_BYTE() != WASM_OP_END) {
     ERR("Offset for data section can't find end after i32.const\n");
@@ -333,39 +333,83 @@ void decode_expr(buffer_t *buf, bool replace_last) {
       retval = RET_ERR;
       return;
     }
-    /* Perform branch replacement/logging */
-    switch (opcode) {
-      case WASM_OP_BLOCK:		/* "block" BLOCKT */
-      case WASM_OP_LOOP:			/* "loop" BLOCKT */
-      case WASM_OP_IF:			/* "if" BLOCKT */
-          SCOPE_BEGIN_INSN();
-          break;
-
-      case WASM_OP_END:			/* "end" */
+    switch(entry->imm_type) {
+      case IMM_NONE: {
+        if (opcode == WASM_OP_END) {			/* "end" */
           SCOPE_COM_DEC(s);
           end_of_expr = (scope == 0);
-          break;
-
-
-      case WASM_OP_BR:			/* "br" LABEL */
-      case WASM_OP_BR_IF: 			/* "br_if" LABEL */
+        }
+        break;
+      }
+      case IMM_BLOCKT: {
+        SCOPE_BEGIN_INSN();
+        break;
+      }
+      case IMM_LABEL: {
         BR_REPLACE_OFFSET();
         num_brs++;
         break;
-
-      case WASM_OP_BR_TABLE: 		/* "br_table" LABELS */
-          ;
-          /* Label vector */
-          uint32_t num_elems = RD_U32();
-          for (uint32_t i = 0; i < num_elems; i++) {
-            BR_REPLACE_OFFSET();
-          }
-          /* Label index */
+      }
+      case IMM_LABELS: {
+        /* Label vector */
+        uint32_t num_elems = RD_U32();
+        for (uint32_t i = 0; i < num_elems; i++) {
           BR_REPLACE_OFFSET();
-          break;
-      
-      default:
-          break;
+        }
+        /* Label index */
+        BR_REPLACE_OFFSET();
+        break;
+      }
+      case IMM_FUNC: 
+        RD_U32(); break;
+      case IMM_SIG_TABLE: 
+        RD_U32(); 
+        RD_U32(); break;
+      case IMM_LOCAL: 
+        RD_U32(); break;
+      case IMM_GLOBAL: 
+        RD_U32(); break;
+      case IMM_TABLE:
+        RD_U32(); break;
+      case IMM_MEMARG:
+        RD_U32();
+        RD_U32(); break;
+      case IMM_I32:
+        RD_I32(); break;
+      case IMM_F64:
+        RD_U64_RAW(); break;
+      case IMM_MEMORY:
+        RD_U32(); break;
+      case IMM_TAG:
+        retval = RET_ERR;
+        return;
+      case IMM_I64:
+        RD_I64(); break;
+      case IMM_F32:
+        RD_U32_RAW(); break;
+      case IMM_REFNULLT:
+        RD_BYTE(); break;
+      case IMM_VALTS: {
+        uint32_t num_vals = RD_U32();
+        for (uint32_t i = 0; i < num_vals; i++) {
+          RD_BYTE();
+        }
+        break;
+      }
+      case IMM_DATA_MEMORY:
+        RD_U32();
+        RD_U32(); break;
+      case IMM_DATA:
+        RD_U32(); break;
+      case IMM_MEMORY_CP:
+        RD_U32();
+        RD_U32(); break;
+      case IMM_DATA_TABLE:
+        retval = RET_ERR;
+        return;
+      case IMM_TABLE_CP:
+        retval = RET_ERR;
+        return;
     }
   }
   FREE(dyn2static_idxs, FN_MAX_SIZE);
@@ -425,7 +469,8 @@ void decode_data_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
     uint32_t sz = RD_U32();
 
     data->bytes_start = buf->ptr;
-    data->bytes_end = buf->ptr + sz;
+    buf->ptr += sz;
+    data->bytes_end = buf->ptr;
   }
 
   module->num_datas = num_datas;
@@ -490,7 +535,7 @@ int decode_sections(wasm_module_t* module, buffer_t *buf) {
     }
 
     if (cbuf.ptr != cbuf.end) {
-      ERR("Section \"%s\" not aligned after parsing -- start:%lu, ptr:%lu, end:%lu\n",
+      ERR("Section \"%s\" not aligned after parsing -- start:%08lx, ptr:%08lx, end:%08lx\n",
           wasm_section_name(section_id),
           cbuf.start - buf->start,
           cbuf.ptr - buf->start,

@@ -25,7 +25,7 @@ int __init startup_runtime(void) {
 	wasm_module_t module = {0};
 	if (parse(&module, buf) < 0) {
 		ERR("Error parsing module\n");
-    goto error;
+    goto error_parse;
 	}
 
   wasm_instance_t module_inst = {0};
@@ -35,7 +35,7 @@ int __init startup_runtime(void) {
   }
 
   uint32_t num_args = 1;
-  wasm_value_t args[1] = { { .tag = WASM_TYPE_I32, .val.i32 = 202 }};
+  wasm_value_t args[1] = { { .tag = WASM_TYPE_I32, .val.i32 = 204 }};
   wasm_value_t result = run_wasm(&module_inst, num_args, args);
 
   print_wasm_value("Return Value: ", result);
@@ -46,6 +46,7 @@ int __init startup_runtime(void) {
 
 error:
   module_deinstantiate(&module_inst);
+error_parse:
   module_free(&module);
   return 1;
 }
