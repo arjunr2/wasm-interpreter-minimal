@@ -39,6 +39,27 @@ static void read_global_type(wasm_global_decl_t* global, buffer_t *buf) {
   global->mutable = RD_BYTE();;
 }
 
+
+/* Function to read i32.const offset since 
+  data/elem section only uses these */
+static uint32_t decode_flag_and_i32_const_off_expr(buffer_t *buf) {
+  // Has to be 0 flag for this
+  if (RD_U32() != 0) {  ERR("Non-0 flag for data/elem section\n"); return -1; }
+  // Has to be i32.const offset for this
+  if (RD_BYTE() != WASM_OP_I32_CONST) {
+    ERR("Offset for data section has to be \"i32.const\"");
+  } 
+  // Offset val
+  uint32_t offset = RD_U32();
+  
+  if (RD_BYTE() != WASM_OP_END) {
+    ERR("Offset for data section can't find end after i32.const\n");
+    return -1;
+  }
+
+  return offset;
+}
+
 /*** ***/
 
 void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
@@ -153,15 +174,51 @@ void decode_global_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 }
 
 void decode_export_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_exps = RD_U32();
+  MALLOC(exports, wasm_export_decl_t, num_exps);
+
+  /* String + exp descriptor + idx */
+  for (uint32_t i = 0; i < num_exps; i++) {
+    wasm_export_decl_t *export = &exports[i];
+
+    /* Export descriptor */
+    export->name = RD_NAME(&export->length);
+    export->kind = RD_BYTE();
+    export->index = RD_U32();
+  }
+
+  module->num_exports = num_exps;
+  module->exports = exports;
 }
 
 void decode_start_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t fn_idx = RD_U32();
+
+  module->has_start = true;
+  module->start_idx = fn_idx;
 }
 
 void decode_element_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_elem = RD_U32();
+  MALLOC(elems, wasm_elems_decl_t, num_elem);
+
+  for (uint32_t i = 0; i < num_elem; i++) {
+    wasm_elems_decl_t *elem = &elems[i];
+    /* Offset val */
+    elem->table_offset = decode_flag_and_i32_const_off_expr(buf);
+
+    /* Element fn idx vector */
+    elem->length = RD_U32();
+    MALLOC(func_idxs, uint32_t, elem->length);
+
+    for (uint32_t j = 0; j < elem->length; j++) {
+      func_idxs[j] = RD_U32();
+    }
+    elem->func_indexes = func_idxs;
+  }
+
+  module->num_elems = num_elem;
+  module->elems = elems;
 }
 
 void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
