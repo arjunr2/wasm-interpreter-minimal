@@ -34,7 +34,7 @@ void data_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
 //}
 
 wasm_value_t decode_const(buffer_t *buf) {
-  byte opcode = read_u8(buf);
+  byte opcode = RD_BYTE();
   wasm_value_t res = wasm_i32_value(0xDEADBEEF);
   switch (opcode) {
     case WASM_OP_I32_CONST: ;
@@ -59,9 +59,6 @@ void globals_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
                     global->init_expr_start, 
                     global->init_expr_end };
     globals[i] = decode_const(&buf);
-    TRACE("Global %d: ", i);
-    trace_wasm_value(globals[i]);
-    TRACE("\n");
   }
 
   module_inst->globals = globals;

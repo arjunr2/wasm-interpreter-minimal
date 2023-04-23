@@ -38,8 +38,7 @@ int __init startup_runtime(void) {
   wasm_value_t args[2] = { { .tag = WASM_TYPE_I32, .val.i32 = 3 }, { .tag = WASM_TYPE_I32, .val.i32 = 4 } };
   wasm_value_t result = run_wasm(&module_inst, num_args, args);
 
-  PRINT("Return Value: ");
-  print_wasm_value(result);
+  print_wasm_value("Return Value: ", result);
 
   module_deinstantiate(&module_inst);
   module_free(&module);

@@ -8,8 +8,8 @@
 const char* wasm_section_name(byte code);
 
 wasm_value_t parse_wasm_value(char* string);
-void print_wasm_value(wasm_value_t val);
-void trace_wasm_value(wasm_value_t val);
+void print_wasm_value(const char* prefix, wasm_value_t val);
+void trace_wasm_value(const char* prefix, wasm_value_t val);
 
 wasm_value_t wasm_i32_value(int32_t val);
 wasm_value_t wasm_f64_value(double val);

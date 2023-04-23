@@ -47,32 +47,32 @@ const char* wasm_section_name(byte code) {
   }
 }
 
-void print_wasm_value(wasm_value_t val) {
+void print_wasm_value(const char* prefix, wasm_value_t val) {
   switch (val.tag) {
   case WASM_TYPE_I32:
-    PRINT("%d", val.val.i32);
+    PRINT("%s%d", prefix, val.val.i32);
     break;
   case WASM_TYPE_F64:
-    PRINT("%lf", val.val.f64);
+    PRINT("%s%lf", prefix, val.val.f64);
     break;
   case WASM_TYPE_EXTERNREF:
-    PRINT("%p", val.val.ref);
+    PRINT("%s%p", prefix, val.val.ref);
     break;
   default:
     ERR("Invalid type: %d\n", val.tag);
   }
 }
 
-void trace_wasm_value(wasm_value_t val) {
+void trace_wasm_value(const char* prefix, wasm_value_t val) {
   switch (val.tag) {
   case WASM_TYPE_I32:
-    TRACE("%d", val.val.i32);
+    TRACE("%s%d", prefix, val.val.i32);
     break;
   case WASM_TYPE_F64:
-    TRACE("%lf", val.val.f64);
+    TRACE("%s%lf", prefix, val.val.f64);
     break;
   case WASM_TYPE_EXTERNREF:
-    TRACE("%p", val.val.ref);
+    TRACE("%s%p", prefix, val.val.ref);
     break;
   default:
     ERR("Invalid type: %d\n", val.tag);

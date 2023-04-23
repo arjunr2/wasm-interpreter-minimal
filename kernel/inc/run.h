@@ -17,17 +17,13 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
 /*** Stack manipulation ***/
 #define POP() ({    \
   top--;  \
-  TRACE("POP: "); \
-  trace_wasm_value(*top); \
-  TRACE("\n");  \
+  trace_wasm_value("POP: ", *top);  \
   *top; \
 })
 
 #define PUSH(value) ({ \
   (*top++ = value); \
-  TRACE("PUSH: "); \
-  trace_wasm_value(value); \
-  TRACE("\n");  \
+  trace_wasm_value("PUSH: ", value); \
   *top; \
 })
 
@@ -138,7 +134,7 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   GET_ADDR(8); \
   double res = *((double *)(inst->mem + maddr)); \
   wasm_value_t vp = wasm_f64_value(res); \
-  TRACE("Load: "); trace_wasm_value(vp); TRACE("\n");  \
+  trace_wasm_value("Load: ", vp);  \
   PUSH(vp);
 
 
@@ -185,8 +181,7 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   wasm_value_t *itr = top - 1;  \
   TRACE("-- Op stack --\n");  \
   while (itr != inst->op_stack_base - 1) { \
-    trace_wasm_value(*itr); \
-    TRACE("\n");  \
+    trace_wasm_value("", *itr); \
     itr--;  \
   }
 

@@ -329,9 +329,9 @@ int wasm_value_equal(wasm_value_t a, wasm_value_t b) {
     wasm_value_t got = parse_wasm_value(str);		\
     if (!wasm_value_equal(expected, got)) {		\
       pr_info("expected: ");				\
-      print_wasm_value(expected);			\
+      print_wasm_value("", expected);			\
       pr_info(", got: ");				\
-      print_wasm_value(got);				\
+      print_wasm_value("", got);				\
       pr_info("\n");					\
     }							\
   } while(0)
