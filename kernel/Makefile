@@ -1,6 +1,7 @@
 .PHONY: all clean
 
-SRC_C := wasmkernel_entry.c src/parse.c src/test.c src/common.c src/ir.c src/opcode_table.c src/instantiate.c
+SRC_C := wasmkernel_entry.c src/parse.c src/test.c src/common.c \
+					src/ir.c src/opcode_table.c src/instantiate.c src/run.c
 
 obj-m += wasmkernel.o
 ccflags-y := -std=gnu99 -I$(src)/inc -I$(src) -Wno-declaration-after-statement

@@ -8,6 +8,7 @@
 #include "parse.h"
 #include "sample_files.h"
 #include "instantiate.h"
+#include "run.h"
 
 #define TEST_NAME add0_wasm
 #define LEN(tname) LEN_(tname)
@@ -32,6 +33,12 @@ int __init startup_runtime(void) {
     ERR("Error instantiating module\n");
     goto error;
   }
+
+  uint32_t num_args = 0;
+  wasm_value_t* args = NULL;
+  wasm_value_t result = run_wasm(&module_inst, num_args, args);
+
+  print_wasm_value(result);
 
   module_deinstantiate(&module_inst);
   module_free(&module);

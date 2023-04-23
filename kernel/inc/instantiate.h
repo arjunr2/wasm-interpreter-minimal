@@ -1,24 +1,10 @@
+#pragma once
+
 #include "ir.h"
 
 #define OP_STACK_MAX 4 * 1024 * 1024
 #define CALL_STACK_MAX 1100000
 
-#define POP()    \
-  (*(--top));  \
-  TRACE("POP: "); \
-  trace_wasm_value(*top); \
-  TRACE("\n");
-
-#define PUSH(value) \
-  (*top++ = value); \
-  TRACE("PUSH: "); \
-  trace_wasm_value(value); \
-  TRACE("\n");
-
-#define PEEK()      (*(top-1))
-
-#define POP_FRAME()         (--frame)
-#define PUSH_FRAME(value)   (*(frame++) = value)
 
 typedef struct {
   const byte* ret_addr;

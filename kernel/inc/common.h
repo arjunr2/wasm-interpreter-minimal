@@ -1,4 +1,5 @@
 #pragma once
+
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -18,8 +19,8 @@ extern int g_trace;
 extern int g_disassemble;
 
 // Helper macros to trace and to print errors.
-#define TRACE(...) pr_notice(__VA_ARGS__);
-#define DISASS(...) pr_notice(__VA_ARGS__);
+#define TRACE(...) pr_info(__VA_ARGS__);
+#define PRINT(...) pr_notice(__VA_ARGS__);
 #define ERR(...) pr_err(__VA_ARGS__)
 
 #define MALLOC(dest, dt, num) \

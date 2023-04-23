@@ -462,7 +462,11 @@ int decode_sections(wasm_module_t* module, buffer_t *buf) {
 		uint32_t len = RD_U32();
 
 		TRACE("Found section \"%s\", len: %d\n", wasm_section_name(section_id), len);
-    buffer_t cbuf = {buf->ptr, buf->ptr, buf->ptr + len};
+    buffer_t cbuf = {
+      .start = buf->ptr, 
+      .ptr = buf->ptr, 
+      .end = buf->ptr + len
+    };
 
     #define DECODE_CALL(sec)  decode_##sec##_section (module, &cbuf, len); break;
     switch (section_id) {

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ir.h"
 
 #define RET_ERR -1

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ir.h"
 
 wasm_value_t native_obj_new(void);

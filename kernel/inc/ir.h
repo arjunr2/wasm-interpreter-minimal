@@ -4,10 +4,6 @@
 #include "wasmdefs.h"
 #include "common.h"
 
-#define TRAP()  \
-  printf("!trap\n");\
-  exit(1);
-
 
 const char* wasm_section_name(byte code);
 
