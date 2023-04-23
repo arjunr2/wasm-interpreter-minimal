@@ -26,18 +26,21 @@
 
 #define TARGET_FETCH() \
   FETCH_OPCODE(); \
-  TRACE("[%llu|%08lx|(%p ; %p)][%u]: %s\n", inst_ct, \
-        *ip - 1 - buf->start, *ip, fn->code_end, \
-        block_depth, opcode_table[opcode].mnemonic); \
+  TRACE("[%llu|%08lx;%08lx][%d][%u]: %s\n", inst_ct, \
+        *ip - 1 - buf->start, buf->end - buf->start, \
+        fn_idx,   \
+        block_depth, \
+        opcode_table[opcode].mnemonic); \
   goto *target_jump_table[opcode];
 
 
 
 #define IP_NEW_FUNC() { \
-  *ip = fn->code_start; \
   buf->start = fn->code_start;  \
   buf->end = fn->code_end;  \
+  *ip = fn->code_start; \
 }
+
 /* If it is an import, call function and push result on stack */
 /*
 if (next_fn_idx < inst->module->num_imports) {
@@ -222,7 +225,7 @@ start_init:
   TARGET_FETCH();
 
   TARGET_OP(WASM_OP_UNREACHABLE) {
-    ERR("Unreachable target at addr %08lx!\n", (*ip - 1 - buf->start));
+    ERR("Unreachable target at Fn[%d], Addr [%08lx]!\n", fn_idx, (*ip - 1 - buf->start));
     TRAP();
     TARGET_FETCH();
   }
