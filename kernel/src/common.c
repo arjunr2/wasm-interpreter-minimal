@@ -33,11 +33,6 @@ int g_disassemble = 0;
   return ERROR;
 
 
-#define STACK_INIT(dst, type) \
-  dst = ( type *) malloc(8 * sizeof( type ));
-
-#define PUSH(dst, src)  \
-  
 
 int32_t decode_i32leb(const uint8_t* ptr, const uint8_t* limit, ssize_t *len) {
   BODY(int32_t, 0xF8, 0x78);

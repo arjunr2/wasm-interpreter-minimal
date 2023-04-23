@@ -7,6 +7,7 @@
 #include "test.h"
 #include "parse.h"
 #include "sample_files.h"
+#include "instantiate.h"
 
 #define TEST_NAME add0_wasm
 #define LEN(tname) LEN_(tname)
@@ -14,17 +15,23 @@
 
 int __init startup_runtime(void) {
 	printk(KERN_INFO "Starting WASM runtime\n");
-	wasm_module_t module = {0};
 	buffer_t buf = {
     TEST_NAME,
     TEST_NAME,
     TEST_NAME + LEN(TEST_NAME)
   };
 
-	int result = parse(&module, buf);
-	if (result < 0) {
-		ERR("Error parsing module | Return: %d\n", result);
+	wasm_module_t module = {0};
+	if (parse(&module, buf) < 0) {
+		ERR("Error parsing module\n");
+    return 1;
 	}
+
+  wasm_instance_t module_inst = {0};
+  if (module_instantiate(&module_inst, &module) < 0) {
+    ERR("Error instantiating module\n");
+    return 1;
+  }
 
 	return 0;
 }
