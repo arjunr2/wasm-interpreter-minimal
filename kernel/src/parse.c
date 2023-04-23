@@ -42,6 +42,8 @@
     print_val = replace_last ? offset : idx;  \
 
 
+
+static int retval = 0;
 /*** Reading intermediate types ***/
 
 static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
@@ -69,6 +71,7 @@ static void read_table_type(wasm_table_decl_t *table, buffer_t *buf) {
   byte reftype = RD_BYTE();
   if ((reftype != WASM_TYPE_FUNCREF) && (reftype != WASM_TYPE_EXTERNREF)) {
     ERR("Invalid table reftype: %d\n", reftype);
+    retval = RET_ERR;
     return;
   }
   table->limits = read_limits(buf);
@@ -85,16 +88,23 @@ static void read_global_type(wasm_global_decl_t* global, buffer_t *buf) {
   data/elem section only uses these */
 static uint32_t decode_flag_and_i32_const_off_expr(buffer_t *buf) {
   // Has to be 0 flag for this
-  if (RD_U32() != 0) {  ERR("Non-0 flag for data/elem section\n"); return -1; }
+  if (RD_U32() != 0) {  
+    ERR("Non-0 flag for data/elem section\n");
+    retval = RET_ERR;
+    return -1;
+  }
   // Has to be i32.const offset for this
   if (RD_BYTE() != WASM_OP_I32_CONST) {
     ERR("Offset for data section has to be \"i32.const\"");
+    retval = RET_ERR;
+    return -1;
   } 
   // Offset val
   uint32_t offset = RD_U32();
   
   if (RD_BYTE() != WASM_OP_END) {
     ERR("Offset for data section can't find end after i32.const\n");
+    retval = RET_ERR;
     return -1;
   }
 
@@ -112,6 +122,7 @@ void decode_type_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
     byte kind = RD_BYTE();
     if (kind != WASM_TYPE_FUNC) {
       ERR("Signature must be func-type (0x60)\n");
+      retval = RET_ERR;
       return;
     }
     sig->num_params = RD_U32();
@@ -142,6 +153,8 @@ void decode_import_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
       case KIND_FUNC: import->index = RD_U32(); break;
       default:
         ERR("Invalid kind for import: %d\n", import->kind);
+        retval = RET_ERR;
+        return;
     }
   }
 
@@ -190,6 +203,7 @@ void decode_memory_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   uint32_t num_mems = read_u32leb(buf);
   if (num_mems != 1) {
     ERR("Memory component has to be 1!\n");
+    retval = RET_ERR;
     return;
   }
 
@@ -315,6 +329,7 @@ void decode_expr(buffer_t *buf, bool replace_last) {
     opcode_entry_t *entry = &opcode_table[opcode];
     if (entry->invalid) {
       ERR("Invalid opcode: %d (%s)\n", opcode, entry->mnemonic);
+      retval = RET_ERR;
       return;
     }
     /* Perform branch replacement/logging */
@@ -375,6 +390,7 @@ void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
       ERR("Code parsing misalignment | Ptr -- 0x%lu ; Endinst -- 0x%lu\n",
         buf->ptr - buf->start,
         buf->end - buf->start);
+      retval = RET_ERR;
       return;
     }
     module->funcs[idx].code_end = end_insts;
@@ -385,6 +401,7 @@ void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
       ERR("Code parsing misalignment | Ptr -- 0x%lu ; Endinst -- 0x%lu\n",
         buf->ptr - buf->start,
         buf->end - buf->start);
+      retval = RET_ERR;
       return;
     }
   }
@@ -394,6 +411,7 @@ void decode_data_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
   uint32_t num_datas = RD_U32();
   if (module->has_datacount && (num_datas != module->num_datas)) {
     ERR("Number of data doesn't match datacount: %d, %d\n", num_datas, module->num_datas);
+    retval = RET_ERR;
     return;
   }
   MALLOC(datas, wasm_data_decl_t, num_datas);
@@ -484,6 +502,7 @@ int decode_sections(wasm_module_t* module, buffer_t *buf) {
 
 int parse(wasm_module_t *module, buffer_t buf) {
   buffer_t fbuf = buf;
+  retval = 0;
 	if (decode_sections(module, &fbuf) == -1) {
     return RET_ERR;
   }
