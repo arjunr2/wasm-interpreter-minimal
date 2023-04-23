@@ -15,21 +15,26 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   return return_result;
 
 /*** Stack manipulation ***/
-#define POP()    \
-  (*(--top));  \
+#define POP() ({    \
+  top--;  \
   TRACE("POP: "); \
   trace_wasm_value(*top); \
-  TRACE("\n");
+  TRACE("\n");  \
+  *top; \
+})
 
-#define PUSH(value) \
+#define PUSH(value) ({ \
   (*top++ = value); \
   TRACE("PUSH: "); \
   trace_wasm_value(value); \
-  TRACE("\n");
+  TRACE("\n");  \
+  *top; \
+})
 
 #define PEEK()      (*(top-1))
 
-#define POP_FRAME()         (--frame)
+#define POP_FRAME()   (--frame);
+
 #define PUSH_FRAME(value)   (*(frame++) = value)
 /*** ***/
 
@@ -103,8 +108,9 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   
 
 #define GET_ADDR(bytes)  \
-  uint32_t align = read_u32leb(buf);  \
-  uint32_t off = read_u32leb(buf);  \
+  uint32_t align = RD_U32();  \
+  uint32_t off = RD_U32();  \
+  (void)align;  \
   v1 = POP(); \
   uint32_t addr = v1.val.i32; \
   uint32_t maddr = addr + off; \

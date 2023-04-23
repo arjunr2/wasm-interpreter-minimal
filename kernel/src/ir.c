@@ -58,6 +58,8 @@ void print_wasm_value(wasm_value_t val) {
   case WASM_TYPE_EXTERNREF:
     PRINT("%p", val.val.ref);
     break;
+  default:
+    ERR("Invalid type: %d\n", val.tag);
   }
 }
 
@@ -72,6 +74,8 @@ void trace_wasm_value(wasm_value_t val) {
   case WASM_TYPE_EXTERNREF:
     TRACE("%p", val.val.ref);
     break;
+  default:
+    ERR("Invalid type: %d\n", val.tag);
   }
 }
 

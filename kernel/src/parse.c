@@ -17,7 +17,8 @@
 #define SCOPE_BEGIN_INSN() \
   ; \
   /* Skip the blocktype */  \
-  volatile uint32_t blocktype = RD_U32();  \
+  uint32_t blocktype = RD_U32();  \
+  (void)blocktype;  \
   STATIC_BR_START_BLOCK();  \
   scope++;
 
