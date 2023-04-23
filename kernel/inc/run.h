@@ -17,7 +17,6 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
 /*** Stack manipulation ***/
 #define POP() ({    \
   top--;  \
-  TRACE("Index: %ld\n", top - inst->op_stack_base); \
   trace_wasm_value("POP: ", *top);  \
   *top; \
 })

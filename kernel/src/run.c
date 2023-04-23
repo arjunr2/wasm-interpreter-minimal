@@ -133,6 +133,7 @@ if (next_fn_idx < inst->module->num_imports) {
 //  return result;
 //}
 
+#define MAX_SCOPES 1000000
 
 wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_value_t* args) {
   
@@ -159,6 +160,8 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   uint32_t block_depth;
   wasm_value_t *locals;
   wasm_value_t *op_ptr;
+
+  MALLOC(block_stack_base, wasm_value_t*, MAX_SCOPES);
 
   // Temp vars
   wasm_value_t v1, v2, v3, v4;
@@ -223,6 +226,8 @@ start_init:
 
   // Fetch first opcode
   TARGET_FETCH();
+
+
 
   TARGET_OP(WASM_OP_UNREACHABLE) {
     ERR("Unreachable target at Fn[%d], Addr [%08lx]!\n", fn_idx, (*ip - 1 - buf->start));
@@ -1163,6 +1168,7 @@ exit_interp_loop: ;
     TRACE("Finished start method; jumping to main\n");
     goto main_init; 
   }
+  FREE(block_stack_base, MAX_SCOPES);
   return return_result;
 }
 

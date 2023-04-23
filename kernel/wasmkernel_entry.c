@@ -10,7 +10,7 @@
 #include "instantiate.h"
 #include "run.h"
 
-#define TEST_NAME add0_wasm
+#define TEST_NAME i32_load8_u1_wasm
 #define LEN(tname) LEN_(tname)
 #define LEN_(tname) tname##_len
 
@@ -34,8 +34,8 @@ int __init startup_runtime(void) {
     goto error;
   }
 
-  uint32_t num_args = 2;
-  wasm_value_t args[2] = { { .tag = WASM_TYPE_I32, .val.i32 = 3 }, { .tag = WASM_TYPE_I32, .val.i32 = 4 } };
+  uint32_t num_args = 1;
+  wasm_value_t args[1] = { { .tag = WASM_TYPE_I32, .val.i32 = 202 }};
   wasm_value_t result = run_wasm(&module_inst, num_args, args);
 
   print_wasm_value("Return Value: ", result);
