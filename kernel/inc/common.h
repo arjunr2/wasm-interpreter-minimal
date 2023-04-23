@@ -30,7 +30,7 @@ extern int g_disassemble;
 
 #define FREE(val, num)  \
   if (num != 0) { \
-    free((void*)val);  \
+    vfree((void*)val);  \
   }
 
 

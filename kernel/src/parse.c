@@ -1,6 +1,47 @@
 #include "parse.h"
 #include "wasmdefs.h"
 
+#define FN_MAX_SIZE 1048576
+
+#define STATIC_BR_START_BLOCK() \
+  static_blocks[static_ctr].op = opcode; \
+  static_blocks[static_ctr].start_addr = (byte*) buf->ptr; \
+  dyn2static_idxs[scope] = static_ctr;  \
+  static_ctr++;
+
+#define STATIC_BR_END_BLOCK() \
+  static_blocks[ dyn2static_idxs[scope] ].end_addr = (byte*)buf->ptr - 1;
+
+/*** INSN MACROS ***/
+
+#define SCOPE_BEGIN_INSN() \
+  ; \
+  /* Skip the blocktype */  \
+  volatile uint32_t blocktype = RD_U32();  \
+  STATIC_BR_START_BLOCK();  \
+  scope++;
+
+#define SCOPE_COM_DEC(s) \
+  scope--;  \
+  STATIC_BR_END_BLOCK();  \
+
+/***********************/
+
+#define BR_REPLACE_OFFSET() \
+    idx = RD_U32();  \
+    /* Get static idx of block*/  \
+    static_idx = dyn2static_idxs[scope-idx-1]; \
+    if (replace_last) { \
+      block_list_t block_dets = static_blocks[ static_idx ];  \
+      target_addr = ((block_dets.op == WASM_OP_LOOP) ?  \
+                            block_dets.start_addr : \
+                            block_dets.end_addr); \
+      offset = target_addr - buf->ptr;  \
+      memcpy((void*)(buf->ptr - 4), &offset, 4); \
+    } \
+    print_val = replace_last ? offset : idx;  \
+
+
 /*** Reading intermediate types ***/
 
 static wasm_type_t* read_type_list(uint32_t num, buffer_t *buf) {
@@ -221,8 +262,132 @@ void decode_element_section(wasm_module_t *module, buffer_t *buf, uint32_t len) 
   module->elems = elems;
 }
 
+
+static void decode_locals(wasm_func_decl_t *fn, buffer_t *buf) {
+  /* Write num local elements */
+  uint32_t num_elems = RD_U32();
+  MALLOC(locals, wasm_local_decl_t, num_elems);
+  
+  uint32_t num_locals = 0;
+  /* Write local types */
+  if (num_elems != 0) {
+    for (uint32_t i = 0; i < num_elems; i++) {
+      /* Number of locals of type */
+      locals[i].count = RD_U32();
+      locals[i].type = RD_BYTE();
+
+      num_locals += locals[i].count;
+    }
+  }
+  
+  fn->num_local_vec = num_elems;
+  fn->num_locals = num_locals;
+  fn->local_decl = locals;
+}
+
+
+block_list_t static_blocks[FN_MAX_SIZE];
+
+void decode_expr(buffer_t *buf, bool replace_last) {
+  /* For br replacement */
+  byte* target_addr;
+  uint32_t idx;
+  uint32_t static_idx;
+  uint32_t offset;
+  int32_t print_val;
+  /* */
+
+  int static_ctr = 0;
+  int num_brs = 0;
+  
+  MALLOC(dyn2static_idxs, int, FN_MAX_SIZE);
+
+  uint32_t scope = 0;
+  // Initial scope
+  byte opcode = WASM_OP_BLOCK;
+  STATIC_BR_START_BLOCK()
+  scope++;
+
+  bool end_of_expr = false;
+  while (!end_of_expr) {
+    /* Decode insn */
+    byte opcode = RD_BYTE();
+    opcode_entry_t *entry = &opcode_table[opcode];
+    if (entry->invalid) {
+      ERR("Invalid opcode: %d (%s)\n", opcode, entry->mnemonic);
+      return;
+    }
+    switch (opcode) {
+      case WASM_OP_BLOCK:		/* "block" BLOCKT */
+      case WASM_OP_LOOP:			/* "loop" BLOCKT */
+      case WASM_OP_IF:			/* "if" BLOCKT */
+          SCOPE_BEGIN_INSN();
+          break;
+
+      case WASM_OP_END:			/* "end" */
+          SCOPE_COM_DEC(s);
+          end_of_expr = (scope == 0);
+          break;
+
+
+      case WASM_OP_BR:			/* "br" LABEL */
+      case WASM_OP_BR_IF: 			/* "br_if" LABEL */
+        BR_REPLACE_OFFSET();
+        num_brs++;
+        break;
+
+      case WASM_OP_BR_TABLE: 		/* "br_table" LABELS */
+          ;
+          /* Label vector */
+          uint32_t num_elems = RD_U32();
+          for (uint32_t i = 0; i < num_elems; i++) {
+            BR_REPLACE_OFFSET();
+          }
+          /* Label index */
+          BR_REPLACE_OFFSET();
+          break;
+      
+      default:
+          ERR("UNKNOWN OPCODE -- %u\n", opcode);
+          return;
+    }
+  }
+  FREE(dyn2static_idxs, FN_MAX_SIZE);
+}
+
 void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_fn = RD_U32();
+
+  for (uint32_t i = 0; i < num_fn; i++) {
+    uint32_t idx = module->num_imports + i;
+    /* Fn size */
+    uint32_t size = RD_U32();
+    const byte* end_insts = buf->ptr + size;
+
+    /* Parse body */
+    /* Local section */
+    decode_locals(module->funcs + idx, buf);
+
+    module->funcs[idx].code_start = buf->ptr;
+    /* Fn body: Instruction decoding */
+    decode_expr(buf, false);
+    if (buf->ptr != end_insts) {
+      ERR("Code parsing misalignment | Ptr -- 0x%lu ; Endinst -- 0x%lu\n",
+        buf->ptr - buf->start,
+        buf->end - buf->start);
+      return;
+    }
+    module->funcs[idx].code_end = end_insts;
+    /* Branch replacement */
+    buf->ptr = module->funcs[idx].code_start;
+    decode_expr(buf, true);
+    if (buf->ptr != end_insts) {
+      ERR("Code parsing misalignment | Ptr -- 0x%lu ; Endinst -- 0x%lu\n",
+        buf->ptr - buf->start,
+        buf->end - buf->start);
+      return;
+    }
+  }
 }
 
 void decode_data_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wasmops.h"
+#include <linux/types.h>
 #include <stdbool.h>
 
 #define WASM_MAGIC 0x6d736100u
