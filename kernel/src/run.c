@@ -174,7 +174,8 @@ main_init:
   fn_idx = inst->main_idx;
   fn = &inst->module->funcs[fn_idx];
   if (fn->sig->num_params != num_args) {
-    ERR("Invalid number of arguments to main\n");
+    ERR("Invalid number of arguments to main (expected %d, got %d)\n",
+      fn->sig->num_params, num_args);
     return return_result;
   }
   for (uint32_t i = 0; i < fn->sig->num_params; i++) {
@@ -733,9 +734,10 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_POPCNT) { 
-    v1 = POP();
-    uint32_t res = 0; //__builtin_popcount(v1.val.i32);
-    PUSH(wasm_i32_value(res));
+    TRAP();
+    //v1 = POP();
+    //uint32_t res = __builtin_popcount(v1.val.i32);
+    //PUSH(wasm_i32_value(res));
     TARGET_FETCH(); 
   }
 
