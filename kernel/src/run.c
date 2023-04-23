@@ -9,12 +9,13 @@
 #include "wasmdefs.h"
 
 /*** Control Flow ***/
-#define VALIDATE_OPCODE() \
+#define VALIDATE_OPCODE() {  \
   opcode_entry_t *entry = &opcode_table[opcode]; \
   if (entry->invalid) { \
     ERR("Unimplemented opcode %d (%s)\n", opcode, entry->mnemonic); \
     TRAP(); \
-  } 
+  } \
+}
 
 #define FETCH_OPCODE()  \
   opcode = RD_BYTE(); \
@@ -25,9 +26,9 @@
 
 #define TARGET_FETCH() \
   FETCH_OPCODE(); \
-  TRACE("[%lu|%08lx|(%p ; %p)][%u]: %s\n", inst_ct, \
+  TRACE("[%llu|%08lx|(%p ; %p)][%u]: %s\n", inst_ct, \
         *ip - 1 - buf->start, *ip, fn->code_end, \
-        block_depth, opcode_names[opcode]); \
+        block_depth, opcode_table[opcode].mnemonic); \
   goto *target_jump_table[opcode];
 
 #define CALL_ROUTINE()  \
@@ -56,6 +57,13 @@
     block_depth = 0;  \
     locals = top - fn->sig->num_params; \
     *ip = fn->code_start; \
+    { \
+      buffer_t newbuf = { \
+        .start = fn->code_start,  \
+        .end = fn->code_end \
+      };  \
+      *buf = newbuf;  \
+    };  \
                       \
     /* Function body locals */  \
     PUSH_FUNCTION_LOCALS(); \
@@ -163,12 +171,12 @@ main_init:
   fn = &inst->module->funcs[fn_idx];
   if (fn->sig->num_params != num_args) {
     ERR("Invalid number of arguments to main\n");
-    exit(1);
+    return return_result;
   }
   for (uint32_t i = 0; i < fn->sig->num_params; i++) {
     if (fn->sig->params[i] != args[i].tag) {
       ERR("Invalid argument types for main\n");
-      exit(1);
+      return return_result;
     }
   }
 
@@ -187,7 +195,7 @@ main_init:
       .start = fn->code_start,
       .end = fn->code_end
     };
-    buf = newbuf;
+    *buf = newbuf;
   };
 
   //  Function body locals
@@ -217,7 +225,7 @@ start_init:
       .start = fn->code_start,
       .end = fn->code_end
     };
-    buf = newbuf;
+    *buf = newbuf;
   };
 
   //  Function body locals

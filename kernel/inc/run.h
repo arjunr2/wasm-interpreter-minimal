@@ -200,7 +200,7 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
 #define TARGET_LABEL_DEF(label) [label] = &&TARGET_##label
 
 #define CREATE_TARGET_JUMP_TABLE()  \
-  static void *target_void_table[] = {  \
+  static void *target_jump_table[] = {  \
   TARGET_LABEL_DEF(WASM_OP_UNREACHABLE), \
   TARGET_LABEL_DEF(WASM_OP_NOP),  \
   TARGET_LABEL_DEF(WASM_OP_BLOCK),  \
