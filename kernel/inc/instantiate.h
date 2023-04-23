@@ -51,3 +51,5 @@ typedef struct {
 
 int module_instantiate(wasm_instance_t *module_inst, wasm_module_t *module);
 
+void module_deinstantiate(wasm_instance_t *inst);
+

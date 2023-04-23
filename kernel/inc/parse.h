@@ -10,3 +10,5 @@ typedef struct {
 } block_list_t;
 
 int parse(wasm_module_t *module, buffer_t buf);
+
+void module_free(wasm_module_t *mod);

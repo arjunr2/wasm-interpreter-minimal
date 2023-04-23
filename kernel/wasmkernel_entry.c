@@ -24,16 +24,23 @@ int __init startup_runtime(void) {
 	wasm_module_t module = {0};
 	if (parse(&module, buf) < 0) {
 		ERR("Error parsing module\n");
-    return 1;
+    goto error;
 	}
 
   wasm_instance_t module_inst = {0};
   if (module_instantiate(&module_inst, &module) < 0) {
     ERR("Error instantiating module\n");
-    return 1;
+    goto error;
   }
 
+  module_deinstantiate(&module_inst);
+  module_free(&module);
 	return 0;
+
+error:
+  module_deinstantiate(&module_inst);
+  module_free(&module);
+  return 1;
 }
 
 void __exit exit_runtime(void) {

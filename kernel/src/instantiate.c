@@ -135,3 +135,13 @@ int module_instantiate(wasm_instance_t *module_inst, wasm_module_t *module) {
 }
 
 
+void module_deinstantiate(wasm_instance_t *inst) {
+  wasm_module_t *mod = inst->module;
+  FREE(inst->mem, 1);
+  FREE(inst->globals, mod->num_globals);
+  FREE(inst->table, mod->num_tables);
+
+  FREE(inst->op_stack_base, OP_STACK_MAX);
+  FREE(inst->call_stack_base, CALL_STACK_MAX);
+}
+
