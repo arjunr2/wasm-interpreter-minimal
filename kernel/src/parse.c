@@ -391,11 +391,31 @@ void decode_code_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
 }
 
 void decode_data_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  uint32_t num_datas = RD_U32();
+  if (module->has_datacount && (num_datas != module->num_datas)) {
+    ERR("Number of data doesn't match datacount: %d, %d\n", num_datas, module->num_datas);
+    return;
+  }
+  MALLOC(datas, wasm_data_decl_t, num_datas);
+
+  for (uint32_t i = 0; i < num_datas; i++) {
+    wasm_data_decl_t *data = &datas[i];
+    /* Offset val */
+    data->mem_offset = decode_flag_and_i32_const_off_expr(buf);
+    /* Size val */
+    uint32_t sz = RD_U32();
+
+    data->bytes_start = buf->ptr;
+    data->bytes_end = buf->ptr + sz;
+  }
+
+  module->num_datas = num_datas;
+  module->data = datas;
 }
 
 void decode_datacount_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {
-  buf->ptr += len;
+  module->has_datacount = true;
+  module->num_datas = RD_U32();
 }
 
 void decode_custom_section(wasm_module_t *module, buffer_t *buf, uint32_t len) {

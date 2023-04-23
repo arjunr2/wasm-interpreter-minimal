@@ -137,7 +137,8 @@ typedef struct {
   uint32_t num_globals;
   wasm_global_decl_t* globals;
   
-  uint32_t num_data;
+  bool has_datacount;
+  uint32_t num_datas;
   wasm_data_decl_t* data;
 
   uint32_t num_elems;
