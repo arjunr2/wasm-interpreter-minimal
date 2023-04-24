@@ -84,13 +84,13 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   v2 = POP();  \
   PUSH(wasm_##ty##_value(v2.val.f64 op v1.val.f64));
 
-#define ROTATE_OP(op, rev_op) \
+#define ROTATE_OP(sz, op, rev_op) \
   v1 = POP(); \
   v2 = POP(); \
-  uint32_t amt = v1.val.i32;  \
-  uint32_t val = v2.val.i32;  \
-  uint32_t res = (val op amt) | (val rev_op (32 - amt));  \
-  PUSH(wasm_i32_value(res));
+  uint##sz##_t amt = v1.val.i##sz;  \
+  uint##sz##_t val = v2.val.i##sz;  \
+  uint##sz##_t res = (val op amt) | (val rev_op (sz - amt));  \
+  PUSH(wasm_i##sz##_value(res));
 
 
 #define uEXT_I32(val, sz)  \

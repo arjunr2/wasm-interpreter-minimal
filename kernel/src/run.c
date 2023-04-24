@@ -807,12 +807,12 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_ROTL) { 
-    ROTATE_OP(<<, >>);
+    ROTATE_OP(32, <<, >>);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_ROTR) { 
-    ROTATE_OP(>>, <<);
+    ROTATE_OP(32, >>, <<);
     TARGET_FETCH(); 
   }
 
@@ -904,12 +904,12 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_ROTL) {
-    TRAP();
+    ROTATE_OP(64, <<, >>);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_ROTR) {
-    TRAP();
+    ROTATE_OP(64, >>, <<);
     TARGET_FETCH();
   }
 
@@ -1054,7 +1054,9 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_WRAP_I64) {
-    TRAP();
+    v1 = POP();
+    uint32_t res = v1.val.i64 & ((1ULL << 32) - 1);
+    PUSH(wasm_i32_value(res));
     TARGET_FETCH();
   }
 
@@ -1079,12 +1081,16 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_EXTEND_I32_S) {
-    TRAP();
+    v1 = POP();
+    int64_t res = (int64_t)v1.val.i32;
+    PUSH(wasm_i64_value(res));
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_EXTEND_I32_U) {
-    TRAP();
+    v1 = POP();
+    uint64_t res = (uint64_t) v1.val.i32;
+    PUSH(wasm_i64_value(res));
     TARGET_FETCH();
   }
 
