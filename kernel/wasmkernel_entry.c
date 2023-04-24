@@ -10,7 +10,7 @@
 #include "instantiate.h"
 #include "run.h"
 
-#define TEST_NAME i32_load8_u1_wasm
+#define TEST_NAME test_wasm
 #define LEN(tname) LEN_(tname)
 #define LEN_(tname) tname##_len
 
