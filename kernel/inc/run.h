@@ -123,11 +123,22 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   TRACE("Load: %08x\n", res);  \
   PUSH(wasm_i32_value(res));
 
+#define LOAD_OP(ty, sz, sgn)  \
+  GET_ADDR(sz/8); \
+  sgn##int##sz##_t res = *((sgn##int##sz##_t *)(inst->mem + maddr)); \
+  /*sgn##EXT_I32(res, sz);*/  \
+  PUSH(wasm_##ty##_value(res));
 
 #define STORE_I32_OP(sz) \
   v2 = POP(); \
   GET_ADDR(sz/8); \
-  uint##sz##_t sval = v2.val.i32 & ((1 << sz) - 1); \
+  uint##sz##_t sval = v2.val.i32 & ((1ULL << sz) - 1); \
+  *(uint##sz##_t *)(inst->mem + maddr) = sval; \
+
+#define STORE_OP(ty, sz) \
+  v2 = POP(); \
+  GET_ADDR(sz/8); \
+  uint##sz##_t sval = v2.val.ty & ((1ULL << sz) - 1); \
   *(uint##sz##_t *)(inst->mem + maddr) = sval; \
 
 

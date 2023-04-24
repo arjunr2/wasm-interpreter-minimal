@@ -401,7 +401,7 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_LOAD) {
-    TRAP();
+    LOAD_OP(i64, 64, );
     TARGET_FETCH();
   }
 
@@ -411,7 +411,7 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_LOAD) {
-    LOAD_I32_OP(32, );
+    LOAD_OP(i32, 32, );
     TARGET_FETCH();
   }
 
@@ -421,62 +421,62 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_LOAD8_S) { 
-    LOAD_I32_OP(8, );
+    LOAD_OP(i32, 8, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LOAD8_U) { 
-    LOAD_I32_OP(8, u);
+    LOAD_OP(i32, 8, u);
     TARGET_FETCH(); 
   }
 
-  TARGET_OP(WASM_OP_I32_LOAD16_S) { 
-    LOAD_I32_OP(16, );
+  TARGET_OP(WASM_OP_I32_LOAD16_S) {
+    LOAD_OP(i32, 16, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LOAD16_U) { 
-    LOAD_I32_OP(16, u);
+    LOAD_OP(i32, 16, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I64_LOAD8_S) {
-    TRAP();
+    LOAD_OP(i64, 8, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LOAD8_U) {
-    TRAP();
+    LOAD_OP(i64, 8, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LOAD16_S) {
-    TRAP();
+    LOAD_OP(i64, 16, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LOAD16_U) {
-    TRAP();
+    LOAD_OP(i64, 16, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LOAD32_S) {
-    TRAP();
+    LOAD_OP(i64, 32, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LOAD32_U) {
-    TRAP();
+    LOAD_OP(i64, 32, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I32_STORE) {
-    STORE_I32_OP(32);
+    STORE_OP(i32, 32);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_STORE) {
-    TRAP();
+    STORE_OP(i64, 64);
     TARGET_FETCH();
   }
 
@@ -491,27 +491,27 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_STORE8) {
-    STORE_I32_OP(8);
+    STORE_OP(i32, 8);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I32_STORE16) {
-    STORE_I32_OP(16);
+    STORE_OP(i32, 16);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_STORE8) {
-    TRAP();
+    STORE_OP(i64, 8);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_STORE16) {
-    TRAP();
+    STORE_OP(i64, 16);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_STORE32) {
-    TRAP();
+    STORE_OP(i64, 32);
     TARGET_FETCH();
   }
 

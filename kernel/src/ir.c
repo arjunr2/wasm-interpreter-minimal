@@ -49,33 +49,39 @@ const char* wasm_section_name(byte code) {
 
 void print_wasm_value(const char* prefix, wasm_value_t val) {
   switch (val.tag) {
-  case WASM_TYPE_I32:
-    PRINT("%s%d", prefix, val.val.i32);
-    break;
-  case WASM_TYPE_F64:
-    PRINT("%s%lf", prefix, val.val.f64);
-    break;
-  case WASM_TYPE_EXTERNREF:
-    PRINT("%s%p", prefix, val.val.ref);
-    break;
-  default:
-    ERR("Invalid type: %d\n", val.tag);
+    case WASM_TYPE_I32:
+      PRINT("%s%d", prefix, val.val.i32);
+      break;
+    case WASM_TYPE_I64:
+      PRINT("%s%lld", prefix, val.val.i64);
+      break;
+    case WASM_TYPE_F64:
+      PRINT("%s%lf", prefix, val.val.f64);
+      break;
+    case WASM_TYPE_EXTERNREF:
+      PRINT("%s%p", prefix, val.val.ref);
+      break;
+    default:
+      ERR("Invalid type: %d\n", val.tag);
   }
 }
 
 void trace_wasm_value(const char* prefix, wasm_value_t val) {
   switch (val.tag) {
-  case WASM_TYPE_I32:
-    TRACE("%s%d", prefix, val.val.i32);
-    break;
-  case WASM_TYPE_F64:
-    TRACE("%s%lf", prefix, val.val.f64);
-    break;
-  case WASM_TYPE_EXTERNREF:
-    TRACE("%s%p", prefix, val.val.ref);
-    break;
-  default:
-    ERR("Invalid type: %d\n", val.tag);
+    case WASM_TYPE_I32:
+      TRACE("%s%d", prefix, val.val.i32);
+      break;
+    case WASM_TYPE_I64:
+      TRACE("%s%lld", prefix, val.val.i64);
+      break;
+    case WASM_TYPE_F64:
+      TRACE("%s%lf", prefix, val.val.f64);
+      break;
+    case WASM_TYPE_EXTERNREF:
+      TRACE("%s%p", prefix, val.val.ref);
+      break;
+    default:
+      ERR("Invalid type: %d\n", val.tag);
   }
 }
 
@@ -83,6 +89,14 @@ wasm_value_t wasm_i32_value(int32_t val) {
   wasm_value_t r = {
     .tag = WASM_TYPE_I32,
     .val.i32 = val,
+  };
+  return r;
+}
+
+wasm_value_t wasm_i64_value(int64_t val) {
+  wasm_value_t r = {
+    .tag = WASM_TYPE_I64,
+    .val.i64 = val,
   };
   return r;
 }

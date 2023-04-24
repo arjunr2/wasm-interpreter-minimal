@@ -12,6 +12,7 @@ void print_wasm_value(const char* prefix, wasm_value_t val);
 void trace_wasm_value(const char* prefix, wasm_value_t val);
 
 wasm_value_t wasm_i32_value(int32_t val);
+wasm_value_t wasm_i64_value(int64_t val);
 wasm_value_t wasm_f64_value(double val);
 wasm_value_t wasm_ref_value(void* val);
 

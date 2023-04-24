@@ -63,6 +63,7 @@ typedef struct {
   wasm_type_t tag;
   union {
     uint32_t i32;
+    uint64_t i64;
     double f64;
     void* ref;
   } val;
