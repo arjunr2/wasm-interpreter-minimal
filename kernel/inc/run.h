@@ -38,11 +38,12 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
 
 /*** Operation Macros ***/
 
-#define BINARY_OP_I32(op, sgn)  \
+#define BINARY_OP_INT(sz, op, sgn)  \
   v1 = POP();  \
   v2 = POP();  \
-  sgn##int32_t res = ((sgn##int32_t)v2.val.i32) op ((sgn##int32_t)v1.val.i32);  \
-  PUSH(wasm_i32_value(res));
+  sgn##int##sz##_t res = ((sgn##int##sz##_t)v2.val.i##sz) op ((sgn##int##sz##_t)v1.val.i##sz);  \
+  PUSH(wasm_i##sz##_value(res));
+
 
 #define DIV_OP_I32() \
   v1 = POP();  \
@@ -116,24 +117,11 @@ wasm_value_t run_wasm(wasm_instance_t *module_inst, uint32_t num_args, wasm_valu
   } \
   
 
-#define LOAD_I32_OP(sz, sgn) \
-  GET_ADDR(sz/8); \
-  sgn##int##sz##_t res = *((sgn##int##sz##_t *)(inst->mem + maddr)); \
-  /*sgn##EXT_I32(res, sz);*/  \
-  TRACE("Load: %08x\n", res);  \
-  PUSH(wasm_i32_value(res));
-
 #define LOAD_OP(ty, sz, sgn)  \
   GET_ADDR(sz/8); \
   sgn##int##sz##_t res = *((sgn##int##sz##_t *)(inst->mem + maddr)); \
   /*sgn##EXT_I32(res, sz);*/  \
   PUSH(wasm_##ty##_value(res));
-
-#define STORE_I32_OP(sz) \
-  v2 = POP(); \
-  GET_ADDR(sz/8); \
-  uint##sz##_t sval = v2.val.i32 & ((1ULL << sz) - 1); \
-  *(uint##sz##_t *)(inst->mem + maddr) = sval; \
 
 #define STORE_OP(ty, sz) \
   v2 = POP(); \

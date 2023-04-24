@@ -532,7 +532,8 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_CONST) {
-    TRAP();
+    int64_t v1 = RD_I64();
+    PUSH(wasm_i64_value(v1));
     TARGET_FETCH();
   }
 
@@ -553,107 +554,108 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_EQ) { 
-    BINARY_OP_I32(==, u);
+    BINARY_OP_INT(32, ==, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_NE) { 
-    BINARY_OP_I32(!=, u);
+    BINARY_OP_INT(32, !=, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LT_S) { 
-    BINARY_OP_I32(<, );
+    BINARY_OP_INT(32, <, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LT_U) { 
-    BINARY_OP_I32(<, u);
+    BINARY_OP_INT(32, <, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_GT_S) { 
-    BINARY_OP_I32(>, );
+    BINARY_OP_INT(32, >, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_GT_U) { 
-    BINARY_OP_I32(>, u);
+    BINARY_OP_INT(32, >, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LE_S) { 
-    BINARY_OP_I32(<=, );
+    BINARY_OP_INT(32, <=, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_LE_U) { 
-    BINARY_OP_I32(<=, u);
+    BINARY_OP_INT(32, <=, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_GE_S) { 
-    BINARY_OP_I32(>=, );
+    BINARY_OP_INT(32, >=, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_GE_U) { 
-    BINARY_OP_I32(>=, u);
+    BINARY_OP_INT(32, >=, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I64_EQZ) {
-    TRAP();
+    v1 = POP();
+    PUSH(wasm_i64_value(v1.val.i64 == 0));
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_EQ) {
-    TRAP();
+    BINARY_OP_INT(64, ==, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_NE) {
-    TRAP();
+    BINARY_OP_INT(64, !=, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LT_S) {
-    TRAP();
+    BINARY_OP_INT(64, <, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LT_U) {
-    TRAP();
+    BINARY_OP_INT(64, <, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_GT_S) {
-    TRAP();
+    BINARY_OP_INT(64, >, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_GT_U) {
-    TRAP();
+    BINARY_OP_INT(64, >, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LE_S) {
-    TRAP();
+    BINARY_OP_INT(64, <=, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_LE_U) {
-    TRAP();
+    BINARY_OP_INT(64, <=, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_GE_S) {
-    TRAP();
+    BINARY_OP_INT(64, >=, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_GE_U) {
-    TRAP();
+    BINARY_OP_INT(64, >=, u);
     TARGET_FETCH();
   }
 
@@ -740,17 +742,17 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_ADD) { 
-    BINARY_OP_I32(+, u);
+    BINARY_OP_INT(32, +, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_SUB) { 
-    BINARY_OP_I32(-, u);
+    BINARY_OP_INT(32, -, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_MUL) { 
-    BINARY_OP_I32(*, u);
+    BINARY_OP_INT(32, *, u);
     TARGET_FETCH(); 
   }
 
@@ -775,32 +777,32 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I32_AND) { 
-    BINARY_OP_I32(&, u);
+    BINARY_OP_INT(32, &, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_OR) { 
-    BINARY_OP_I32(|, u);
+    BINARY_OP_INT(32, |, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_XOR) { 
-    BINARY_OP_I32(^, u);
+    BINARY_OP_INT(32, ^, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_SHL) { 
-    BINARY_OP_I32(<<, u);
+    BINARY_OP_INT(32, <<, u);
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_SHR_S) { 
-    BINARY_OP_I32(>>, );
+    BINARY_OP_INT(32, >>, );
     TARGET_FETCH(); 
   }
 
   TARGET_OP(WASM_OP_I32_SHR_U) { 
-    BINARY_OP_I32(>>, u);
+    BINARY_OP_INT(32, >>, u);
     TARGET_FETCH(); 
   }
 
@@ -815,32 +817,39 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_CLZ) {
-    TRAP();
+    v1 = POP();
+    uint64_t res = v1.val.i64 ? __builtin_clzll(v1.val.i64) : 64;
+    PUSH(wasm_i64_value(res));
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_CTZ) {
-    TRAP();
+    v1 = POP();
+    uint64_t res = v1.val.i64 ? __builtin_ctzll(v1.val.i64) : 64;
+    PUSH(wasm_i64_value(res));
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_POPCNT) {
     TRAP();
+    //v1 = POP();
+    //uint32_t res = __builtin_popcount(v1.val.i32);
+    //PUSH(wasm_i32_value(res));
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_ADD) {
-    TRAP();
+    BINARY_OP_INT(64, +, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_SUB) {
-    TRAP();
+    BINARY_OP_INT(64, -, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_MUL) {
-    TRAP();
+    BINARY_OP_INT(64, *, u);
     TARGET_FETCH();
   }
 
@@ -865,32 +874,32 @@ start_init:
   }
 
   TARGET_OP(WASM_OP_I64_AND) {
-    TRAP();
+    BINARY_OP_INT(64, &, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_OR) {
-    TRAP();
+    BINARY_OP_INT(64, |, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_XOR) {
-    TRAP();
+    BINARY_OP_INT(64, ^, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_SHL) {
-    TRAP();
+    BINARY_OP_INT(64, <<, u);
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_SHR_S) {
-    TRAP();
+    BINARY_OP_INT(64, >>, );
     TARGET_FETCH();
   }
 
   TARGET_OP(WASM_OP_I64_SHR_U) {
-    TRAP();
+    BINARY_OP_INT(64, >>, u);
     TARGET_FETCH();
   }
 
