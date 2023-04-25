@@ -41,6 +41,12 @@
   *ip = fn->code_start; \
 }
 
+#define IP_RET_FUNC() {	\
+	*ip = frame->ret_addr;	\
+	buf->start = fn->code_start;	\
+	buf->end = fn->code_end;	\
+}
+
 /* If it is an import, call function and push result on stack */
 /*
 if (next_fn_idx < inst->module->num_imports) {
@@ -312,12 +318,13 @@ start_init:
 
     POP_FRAME();
     // Return to original address
-    *ip = frame->ret_addr;
     block_depth = frame->block_depth;
     fn_idx = frame->fn_idx;
     fn = &inst->module->funcs[fn_idx];
     locals = frame->locals;
     op_ptr = frame->op_ptr;
+
+		IP_RET_FUNC();
 
     // Jump to returned function
     TARGET_FETCH();
