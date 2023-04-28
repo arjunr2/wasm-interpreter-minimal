@@ -15,7 +15,7 @@
 
 
 MODULE_LICENSE("GPL");
-char *dip="192.168.1.109";
+char *dip="192.168.1.76";
 unsigned short dport=8008;
 //module_param(dip,charp,0644);
 //module_param(dport,ushort,0644);
