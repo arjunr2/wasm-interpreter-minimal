@@ -6,6 +6,7 @@
 * Any bugs please report <tingw.liu@gmail.com>
 */
 #include <linux/module.h>
+#include <linux/delay.h>
 #include <net/ip.h>
 #include <net/sock.h>
 #include <linux/in.h>
@@ -17,8 +18,6 @@
 MODULE_LICENSE("GPL");
 char *dip="192.168.1.76";
 unsigned short dport=8008;
-//module_param(dip,charp,0644);
-//module_param(dport,ushort,0644);
 struct sockaddr_in recvaddr;
 struct socket *sock;
 
@@ -76,9 +75,11 @@ static int __init send_udp_init(void)
 		return -1;
 
 	printk("send_udp_init ok\n");
-		for (int i = 0 ; i < 2; i++) {
+		for (int i = 0 ; i < 20000; i++) {
 				char sendstring[]="hello world";
         send_msg(sock,sendstring,strlen(sendstring));
+				pr_err("Sending message %d\n", i);
+				udelay(1000);
 		}
         return 0;
 }
