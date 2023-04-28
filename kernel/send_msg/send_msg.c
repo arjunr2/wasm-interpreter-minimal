@@ -15,10 +15,8 @@
 
 
 MODULE_LICENSE("GPL");
-char *sendstring="hello world";
-char *dip="127.0.0.1";
+char *dip="192.168.1.109";
 unsigned short dport=8008;
-//module_param(sendstring,charp,0644);
 //module_param(dip,charp,0644);
 //module_param(dport,ushort,0644);
 struct sockaddr_in recvaddr;
@@ -27,7 +25,7 @@ struct socket *sock;
 static int send_msg(struct socket *sock, char *buffer, size_t length)
 {
         struct msghdr        msg;
-        struct kvec        iov;
+        struct kvec        iov = {0};
         int                len;
        
         memset(&msg,0,sizeof(msg));
@@ -78,7 +76,8 @@ static int __init send_udp_init(void)
 		return -1;
 
 	printk("send_udp_init ok\n");
-		for (int i = 0 ; i < 1000; i++) {
+		for (int i = 0 ; i < 2; i++) {
+				char sendstring[]="hello world";
         send_msg(sock,sendstring,strlen(sendstring));
 		}
         return 0;
