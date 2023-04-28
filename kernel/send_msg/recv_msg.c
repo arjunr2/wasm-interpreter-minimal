@@ -42,7 +42,7 @@
 #include <net/udp.h>
 #include <linux/netfilter_ipv4.h>
 
-#define SIP     "192.168.1.118"
+#define SIP     "192.168.1.216"
 
 static struct nf_hook_ops nfho;
 
@@ -68,18 +68,15 @@ unsigned int hook_func(void *priv,
                         //sprintf(sourceAddr, "%pI4", &iph->saddr);
 
                         if (myAddr == sourceAddr) {
-                                pr_err("IP:[%pI4]-->[%pI4];\n",
-                                        &iph->saddr, &iph->daddr);
-                                pr_err("IP (version %u, ihl %u, tos 0x%x, ttl %u, id %u, length %u, ",
-                                        iph->version, iph->ihl, iph->tos, iph->ttl,
-                                        ntohs(iph->id), ntohs(iph->tot_len));
+                                //pr_err("IP:[%pI4]-->[%pI4];\n",
+                                //        &iph->saddr, &iph->daddr);
                                 switch (iph->protocol) {
 																	case IPPROTO_UDP:
 																					/*get the udp information*/
 																					udph = (struct udphdr *)(skb->data + iph->ihl*4);
-																					printk("UDP: [%u]-->[%u];\n", ntohs(udph->source), ntohs(udph->dest));    
-																					payload = (char *)udph + (char)sizeof(struct udphdr);
-																					printk("Payload: { \n%s\n }", payload);
+																					//printk("UDP: [%u]-->[%u];\n", ntohs(udph->source), ntohs(udph->dest));    
+																					//payload = (char *)udph + (char)sizeof(struct udphdr);
+																					//printk("Payload: { \n%s\n }", payload);
 																					counter++;
 																					break;
 																	default:
