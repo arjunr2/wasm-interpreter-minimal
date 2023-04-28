@@ -63,7 +63,7 @@ unsigned int hook_func(void *priv,
                 if(iph) {
 												__be32 myAddr = in_aton(SIP);
 												__be32 sourceAddr = iph->saddr;
-												pr_err("M: %pI4; S: %pI4\n", &myAddr, &sourceAddr);
+												//pr_err("S: %pI4 ; M: %pI4\n", &sourceAddr, &myAddr);
                         //sprintf(myAddr, SIP);
                         //sprintf(sourceAddr, "%pI4", &iph->saddr);
 
@@ -83,11 +83,6 @@ unsigned int hook_func(void *priv,
 																					counter++;
 																					break;
 																	default:
-																					/*get the udp information*/
-																					udph = (struct udphdr *)(skb->data + iph->ihl*4);
-																					printk("UDP: [%u]-->[%u];\n", ntohs(udph->source), ntohs(udph->dest));    
-																					payload = (char *)udph + (char)sizeof(struct udphdr);
-																					printk("Payload: { \n%s\n }", payload);
 																					printk("unknown protocol!\n");
 																					break;
                                 }
