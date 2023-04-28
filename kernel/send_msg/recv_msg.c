@@ -42,7 +42,7 @@
 #include <net/udp.h>
 #include <linux/netfilter_ipv4.h>
 
-#define SIP     "192.168.1.55"
+#define SIP     "192.168.1.118"
 
 static struct nf_hook_ops nfho;
 
