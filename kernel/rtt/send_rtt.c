@@ -32,6 +32,9 @@ unsigned short dport=8008;
 struct sockaddr_in recvaddr;
 struct socket *sock;
 
+// Send globals
+static struct task_struct *send_kthread;
+
 // Receive globals
 static struct nf_hook_ops nfho;
 static int counter = 0;
@@ -121,11 +124,35 @@ error:
 	return;
 }
 
-static int __init send_rtt_init(void) {
+
+int send_rtt_function(void *args) {
+
 	make_daddr();
 	make_socket();
 	if(sock == NULL)
 		return -1;
+
+	printk("Starting send RTT\n");
+	char sendstring[] = "hello world";
+
+	while (!kthread_should_stop()) {
+		for (int i = 0; i < 200; i++) {
+			receive_flag = 0;
+			send_msg(sock,sendstring,strlen(sendstring));
+			pr_err("Sending message %d\n", i);
+			volatile int ct = 0;
+			while (receive_flag == 0) { if (ct++ == 100000000) break; };
+			// Timestamp
+			udelay(5000);
+		}
+		printk("Finished send RTT\n");
+	}
+	
+	return 0;
+}
+
+
+static int __init send_rtt_init(void) {
 
 	// Receiver hook registration
 	nfho.hook = hook_func;        
@@ -134,26 +161,25 @@ static int __init send_rtt_init(void) {
 	nfho.priority = NF_IP_PRI_FIRST;
 	nf_register_net_hook(&init_net, &nfho);
 
-	printk("Starting send RTT\n");
-	for (int i = 0 ; i < 200; i++) {
-		char sendstring[] = "hello world";
-		receive_flag = 0;
-		send_msg(sock,sendstring,strlen(sendstring));
-		pr_err("Sending message %d\n", i);
-		volatile int ct = 0;
-		while (receive_flag == 0) { if (ct++ == 100000000) break; };
-		// Timestamp
-		udelay(5000);
+	// Send thread
+	printk("Initializing SendRTT Thread\n");
+	send_kthread = kthread_run(send_rtt_function, NULL, "send_rtt_function");
+	if (send_kthread) {
+		printk("SendRTT thread initialized run!\n");
+	} else {
+		pr_err("SendRTT thread could not be created!\n");
+		return -1;
 	}
-	printk("Finished send RTT\n");
 	return 0;
 }
 
 static void __exit send_rtt_exit(void) {
 	if(sock)
 		sock_release(sock);
-  nf_unregister_net_hook(&init_net, &nfho);
 	printk("Tear down sender RTT\n");
+  nf_unregister_net_hook(&init_net, &nfho);
+	kthread_stop(send_kthread);
+	printk("Torn down\n");
 	return;
 }
 
