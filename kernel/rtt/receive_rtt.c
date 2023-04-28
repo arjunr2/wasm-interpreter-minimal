@@ -35,6 +35,7 @@ struct socket *sock;
 // Receive globals
 static struct nf_hook_ops nfho;
 static int counter = 0;
+static int receive_buf = 0;
 
 static int send_msg(struct socket *sock, char *buffer, size_t length) {
 	struct msghdr        msg;
@@ -74,8 +75,8 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 					case IPPROTO_UDP:
 						/*get the udp information*/
 						udph = (struct udphdr *)(skb->data + iph->ihl*4);
-						printk("Payload: { \n%s\n }", payload);
-						send_msg(sock, payload, strlen(sendstring));
+						//printk("Payload: { \n%s\n }", payload);
+						receive_buf++;
 						counter++;
 						break;
 					default:
@@ -135,6 +136,13 @@ static int __init send_rtt_init(void) {
 	nf_register_net_hook(&init_net, &nfho);
 
 	printk("Starting receiving RTT\n");
+	
+	//while(1) {
+	//	while (receive_buf <= 0) { };
+	//	send_msg(sock, sendstring, strlen(sendstring));
+	//	receive_buf--;
+	//}
+
 	return 0;
 }
 
@@ -143,6 +151,8 @@ static void __exit send_rtt_exit(void) {
 		sock_release(sock);
   nf_unregister_net_hook(&init_net, &nfho);
 	printk("Tear down sender RTT\n");
+	printk("Num packets: %d\n", counter);
+	printk("Receive buf: %d\n", receive_buf);
 	return;
 }
 

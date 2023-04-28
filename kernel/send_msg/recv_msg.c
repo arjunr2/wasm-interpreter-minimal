@@ -42,7 +42,7 @@
 #include <net/udp.h>
 #include <linux/netfilter_ipv4.h>
 
-#define SIP     "192.168.1.216"
+#define RECEIVING_IP     "192.168.1.76"
 
 static struct nf_hook_ops nfho;
 
@@ -61,7 +61,7 @@ unsigned int hook_func(void *priv,
 
                 iph = ip_hdr(skb);
                 if(iph) {
-												__be32 myAddr = in_aton(SIP);
+												__be32 myAddr = in_aton(RECEIVING_IP);
 												__be32 sourceAddr = iph->saddr;
 												//pr_err("S: %pI4 ; M: %pI4\n", &sourceAddr, &myAddr);
                         //sprintf(myAddr, SIP);
