@@ -26,7 +26,7 @@
 #include <linux/net.h>
 
 
-char *destination_ip="192.168.1.76";
+char *destination_ip="192.168.1.216";
 char sendstring[] = "hello world";
 unsigned short dport=8008;
 struct sockaddr_in recvaddr;
@@ -40,6 +40,7 @@ static int receive_flag = 0;
 
 unsigned int hook_func(void *priv, struct sk_buff *skb, 
 				const struct nf_hook_state *state) {
+	printk("Entered hook fn\n");
 	if(skb) {
 		struct udphdr *udph = NULL;
 		struct iphdr *iph = NULL;
@@ -134,13 +135,15 @@ static int __init send_rtt_init(void) {
 	nf_register_net_hook(&init_net, &nfho);
 
 	printk("Starting send RTT\n");
-	for (int i = 0 ; i < 20000; i++) {
-		pr_err("Sending message %d\n", i);
+	for (int i = 0 ; i < 200; i++) {
+		char sendstring[] = "hello world";
 		receive_flag = 0;
 		send_msg(sock,sendstring,strlen(sendstring));
-		while (receive_flag == 0) {};
+		pr_err("Sending message %d\n", i);
+		volatile int ct = 0;
+		while (receive_flag == 0) { if (ct++ == 100000000) break; };
 		// Timestamp
-		udelay(1000);
+		udelay(5000);
 	}
 	printk("Finished send RTT\n");
 	return 0;
