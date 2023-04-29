@@ -43,7 +43,7 @@ static int receive_flag = 0;
 
 unsigned int hook_func(void *priv, struct sk_buff *skb, 
 				const struct nf_hook_state *state) {
-	printk("Entered hook fn\n");
+	//printk("Entered hook fn\n");
 	if(skb) {
 		struct udphdr *udph = NULL;
 		struct iphdr *iph = NULL;
@@ -135,20 +135,17 @@ int send_rtt_function(void *args) {
 	printk("Starting send RTT\n");
 	char sendstring[] = "hello world";
 
-	while (!kthread_should_stop()) {
-		for (int i = 0; i < 200; i++) {
-			receive_flag = 0;
-			send_msg(sock,sendstring,strlen(sendstring));
-			pr_err("Sending message %d\n", i);
-			volatile int ct = 0;
-			while (receive_flag == 0) { if (ct++ == 100000000) break; };
-			// Timestamp
-			udelay(5000);
-		}
-		printk("Finished send RTT\n");
+	for (int i = 0; i < 200; i++) {
+		receive_flag = 0;
+		send_msg(sock,sendstring,strlen(sendstring));
+		pr_err("Sending message %d\n", i);
+		volatile int ct = 0;
+		while (receive_flag == 0) { if (ct++ == 100000000) break; };
+		// Timestamp
+		udelay(5000);
 	}
-	
-	return 0;
+	printk("Finished send RTT\n");
+	do_exit(0);
 }
 
 
@@ -159,7 +156,7 @@ static int __init send_rtt_init(void) {
 	nfho.hooknum  = NF_INET_PRE_ROUTING;
 	nfho.pf = AF_INET;
 	nfho.priority = NF_IP_PRI_FIRST;
-	nf_register_net_hook(&init_net, &nfho);
+	//nf_register_net_hook(&init_net, &nfho);
 
 	// Send thread
 	printk("Initializing SendRTT Thread\n");
@@ -177,8 +174,7 @@ static void __exit send_rtt_exit(void) {
 	if(sock)
 		sock_release(sock);
 	printk("Tear down sender RTT\n");
-  nf_unregister_net_hook(&init_net, &nfho);
-	kthread_stop(send_kthread);
+  //nf_unregister_net_hook(&init_net, &nfho);
 	printk("Torn down\n");
 	return;
 }
