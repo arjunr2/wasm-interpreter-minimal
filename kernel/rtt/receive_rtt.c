@@ -27,7 +27,7 @@
 
 
 char *destination_ip="192.168.1.76";
-char sendstring[] = "hello world";
+char sendstring[] = "hello world pong";
 unsigned short dport=8008;
 struct sockaddr_in recvaddr;
 struct socket *sock;
@@ -78,6 +78,7 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 					case IPPROTO_UDP:
 						/*get the udp information*/
 						udph = (struct udphdr *)(skb->data + iph->ihl*4);
+						payload = (char *)udph + (char)sizeof(struct udphdr);
 						printk("Payload: { \n%s\n }", payload);
 						receive_buf++;
 						counter++;
@@ -129,9 +130,9 @@ error:
 int pong_rtt_function(void* args) {
 	while (!kthread_should_stop()) {
 		if (receive_buf > 0) {
-			//send_msg(sock, sendstring, strlen(sendstring));
+			send_msg(sock, sendstring, strlen(sendstring));
 			printk("Sent message\n");
-			//receive_buf--;
+			receive_buf--;
 		}
 	}
 	return 0;
