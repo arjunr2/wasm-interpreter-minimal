@@ -32,10 +32,13 @@ unsigned short dport=8008;
 struct sockaddr_in recvaddr;
 struct socket *sock;
 
+// Pong globals
+static struct task_struct *pong_kthread;
+
 // Receive globals
 static struct nf_hook_ops nfho;
 static int counter = 0;
-static int receive_buf = 0;
+static volatile int receive_buf = 0;
 
 static int send_msg(struct socket *sock, char *buffer, size_t length) {
 	struct msghdr        msg;
@@ -75,7 +78,7 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 					case IPPROTO_UDP:
 						/*get the udp information*/
 						udph = (struct udphdr *)(skb->data + iph->ihl*4);
-						//printk("Payload: { \n%s\n }", payload);
+						printk("Payload: { \n%s\n }", payload);
 						receive_buf++;
 						counter++;
 						break;
@@ -122,11 +125,33 @@ error:
 	return;
 }
 
-static int __init send_rtt_init(void) {
+
+int pong_rtt_function(void* args) {
+	while (!kthread_should_stop()) {
+		if (receive_buf > 0) {
+			//send_msg(sock, sendstring, strlen(sendstring));
+			printk("Sent message\n");
+			//receive_buf--;
+		}
+	}
+	return 0;
+}
+
+
+static int __init pong_rtt_init(void) {
 	make_daddr();
 	make_socket();
 	if(sock == NULL)
 		return -1;
+
+
+	pong_kthread = kthread_run(pong_rtt_function, NULL, "pong_rtt_function");
+	if (pong_kthread) {
+		printk("PongRTT thread initialized run!\n");
+	} else {
+		pr_err("PongRTT thread could not be created!\n");
+		return -1;
+	}
 
 	// Receiver hook registration
 	nfho.hook = hook_func;        
@@ -137,26 +162,20 @@ static int __init send_rtt_init(void) {
 
 	printk("Starting receiving RTT\n");
 	
-	//while(1) {
-	//	while (receive_buf <= 0) { };
-	//	send_msg(sock, sendstring, strlen(sendstring));
-	//	receive_buf--;
-	//}
-
 	return 0;
 }
 
-static void __exit send_rtt_exit(void) {
+static void __exit pong_rtt_exit(void) {
 	if(sock)
 		sock_release(sock);
   nf_unregister_net_hook(&init_net, &nfho);
-	printk("Tear down sender RTT\n");
+	printk("Tear down pong RTT\n");
+	kthread_stop(pong_kthread);
 	printk("Num packets: %d\n", counter);
-	printk("Receive buf: %d\n", receive_buf);
 	return;
 }
 
-module_init(send_rtt_init);
-module_exit(send_rtt_exit);
+module_init(pong_rtt_init);
+module_exit(pong_rtt_exit);
 
 MODULE_LICENSE("GPL");
