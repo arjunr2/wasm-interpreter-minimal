@@ -23,14 +23,19 @@
 #include <linux/delay.h>
 #include <net/sock.h>
 #include <linux/udp.h>
+#include <linux/socket.h>
 #include <linux/net.h>
 
+// Server settings
+char *server_ip="192.168.1.216";
+unsigned short server_port=8008;
 
-char *destination_ip="192.168.1.76";
+char *client_ip="192.168.1.109";
+
 char sendstring[] = "hello world pong";
-unsigned short dport=8008;
 struct sockaddr_in recvaddr;
 struct socket *sock;
+
 
 // Pong globals
 static struct task_struct *pong_kthread;
@@ -73,13 +78,12 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 			//pr_err("S: %pI4 ; M: %pI4\n", &sourceAddr, &myAddr);
 
 			if (myAddr == sourceAddr) {
-				//pr_err("IP:[%pI4]-->[%pI4];\n", &iph->saddr, &iph->daddr);
+				pr_err("IP:[%pI4]-->[%pI4];\n", &iph->saddr, &iph->daddr);
 				switch (iph->protocol) {
 					case IPPROTO_UDP:
 						/*get the udp information*/
 						udph = (struct udphdr *)(skb->data + iph->ihl*4);
 						payload = (char *)udph + (char)sizeof(struct udphdr);
-						printk("Payload: { \n%s\n }", payload);
 						receive_buf++;
 						counter++;
 						break;
@@ -100,28 +104,22 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 }
 
 
-static void make_daddr(void) {
+static void make_server_socket(void) {
 	memset(&recvaddr,0,sizeof(recvaddr));
 	recvaddr.sin_family = AF_INET;
-	recvaddr.sin_port = htons(dport);
-	recvaddr.sin_addr.s_addr = in_aton(destination_ip);
-}
+	recvaddr.sin_port = htons(server_port);
+	recvaddr.sin_addr.s_addr = in_aton(server_ip);
 
-
-static void make_socket(void) {
 	if(sock_create_kern(&init_net, AF_INET, SOCK_DGRAM, IPPROTO_UDP, &sock) < 0){
 		printk(KERN_ALERT "sock_create_kern error\n");
-		sock = NULL;
-		return;
-	}
-	if(sock->ops->connect(sock, (struct sockaddr*)&recvaddr,
-														 sizeof(struct sockaddr), 0) < 0){
-		printk(KERN_ALERT "sock connect error\n");
 		goto error;
+	}
+	int err;
+	if ((err = kernel_bind (sock, (struct sockaddr*)&recvaddr, sizeof(struct sockaddr) )) < 0) {
+		printk(KERN_ALERT "sock bind error: %d\n", err);
 	}
 	return;
 error:
-	sock_release(sock);
 	sock = NULL;
 	return;
 }
@@ -130,8 +128,7 @@ error:
 int pong_rtt_function(void* args) {
 	while (!kthread_should_stop()) {
 		if (receive_buf > 0) {
-			send_msg(sock, sendstring, strlen(sendstring));
-			printk("Sent message\n");
+			//send_msg(sock, sendstring, strlen(sendstring) + 1);
 			receive_buf--;
 		}
 	}

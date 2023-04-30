@@ -21,6 +21,7 @@
 #include <net/udp.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/delay.h>
+#include <linux/timekeeping.h>
 #include <net/sock.h>
 #include <linux/udp.h>
 #include <linux/net.h>
@@ -40,6 +41,7 @@ static struct nf_hook_ops nfho;
 static int counter = 0;
 
 static int receive_flag = 0;
+static ktime_t recv_msg_time;
 
 unsigned int hook_func(void *priv, struct sk_buff *skb, 
 				const struct nf_hook_state *state) {
@@ -56,13 +58,14 @@ unsigned int hook_func(void *priv, struct sk_buff *skb,
 			//pr_err("S: %pI4 ; M: %pI4\n", &sourceAddr, &myAddr);
 
 			if (myAddr == sourceAddr) {
-				//pr_err("IP:[%pI4]-->[%pI4];\n", &iph->saddr, &iph->daddr);
+				pr_err("IP:[%pI4]-->[%pI4];\n", &iph->saddr, &iph->daddr);
 				switch (iph->protocol) {
 					case IPPROTO_UDP:
 						/*get the udp information*/
 						udph = (struct udphdr *)(skb->data + iph->ihl*4);
-						printk("Payload: { \n%s\n }", payload);
+						payload = (char*)udph + (char)sizeof(struct udphdr);
 						counter++;
+						recv_msg_time = ktime_get();
 						receive_flag = 1;
 						break;
 					default:
@@ -107,20 +110,11 @@ static void make_daddr(void) {
 
 
 static void make_socket(void) {
-	if(sock_create_kern(&init_net, AF_INET, SOCK_DGRAM, IPPROTO_UDP, &sock) < 0){
-		printk(KERN_ALERT "sock_create_kern error\n");
+	int err;
+	if ( (err = sock_create_kern(&init_net, AF_INET, SOCK_DGRAM, IPPROTO_UDP, &sock)) < 0){
+		printk(KERN_ALERT "sock_create_kern error: %d \n", err);
 		sock = NULL;
-		return;
 	}
-	if(sock->ops->connect(sock, (struct sockaddr*)&recvaddr,
-														 sizeof(struct sockaddr), 0) < 0){
-		printk(KERN_ALERT "sock connect error\n");
-		goto error;
-	}
-	return;
-error:
-	sock_release(sock);
-	sock = NULL;
 	return;
 }
 
@@ -132,15 +126,32 @@ int send_rtt_function(void *args) {
 	if(sock == NULL)
 		return -1;
 
+	// Receiver hook registration
+	nfho.hook = hook_func;        
+	nfho.hooknum  = NF_INET_PRE_ROUTING;
+	nfho.pf = AF_INET;
+	nfho.priority = NF_IP_PRI_FIRST;
+	//nf_register_net_hook(&init_net, &nfho);
+
+
 	printk("Starting send RTT\n");
 	char sendstring[] = "hello world";
 
-	for (int i = 0; i < 200; i++) {
-		receive_flag = 0;
+	for (int i = 0; i < 20; i++) {
+		//receive_flag = 0;
+		//ktime_t start_time = ktime_get();
+		pr_err("Sending msg %d\n", i);
 		send_msg(sock,sendstring,strlen(sendstring));
-		pr_err("Sending message %d\n", i);
-		volatile int ct = 0;
-		while (receive_flag == 0) { if (ct++ == 100000000) break; };
+		//int timeout = 0;
+		//while (receive_flag == 0) { 
+		//	ktime_t cur_time = ktime_get();
+		//	if (ktime_ms_delta(cur_time, start_time) >= 2000) { 
+		//		printk("Timeout on message!\n");
+		//		timeout = 1;
+		//		break; 
+		//	}
+		//};
+		//if (!timeout) { printk("RTT Time: %lld\n", ktime_us_delta(recv_msg_time, start_time)); }
 		// Timestamp
 		udelay(5000);
 	}
@@ -150,14 +161,6 @@ int send_rtt_function(void *args) {
 
 
 static int __init send_rtt_init(void) {
-
-	// Receiver hook registration
-	nfho.hook = hook_func;        
-	nfho.hooknum  = NF_INET_PRE_ROUTING;
-	nfho.pf = AF_INET;
-	nfho.priority = NF_IP_PRI_FIRST;
-	//nf_register_net_hook(&init_net, &nfho);
-
 	// Send thread
 	printk("Initializing SendRTT Thread\n");
 	send_kthread = kthread_run(send_rtt_function, NULL, "send_rtt_function");
@@ -171,10 +174,11 @@ static int __init send_rtt_init(void) {
 }
 
 static void __exit send_rtt_exit(void) {
-	if(sock)
+	if(sock) {
 		sock_release(sock);
+		//nf_unregister_net_hook(&init_net, &nfho);
+	}
 	printk("Tear down sender RTT\n");
-  //nf_unregister_net_hook(&init_net, &nfho);
 	printk("Torn down\n");
 	return;
 }

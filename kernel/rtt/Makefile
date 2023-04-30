@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-obj-m += send_rtt.o receive_rtt.o
+obj-m += send_rtt.o receive_rtt.o test.o
 ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 
 all:
