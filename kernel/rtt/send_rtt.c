@@ -37,7 +37,7 @@ char sendstring[] = "hello world";
 static struct task_struct *send_kthread;
 
 // Receive globals
-char *client_ip = "192.168.1.109";
+char *client_ip = "192.168.1.155";
 struct sockaddr_in recvaddr;
 
 
@@ -148,7 +148,7 @@ int send_rtt_function(void *args) {
 	printk("Starting send RTT\n");
 	char sendstring[] = "hello world";
 
-	for (int i = 0; i < 2000; i++) {
+	for (int i = 0; i < 3000; i++) {
 		printk("Sending msg %d\n", i);
 		// Timstamp and send message
 		ktime_t start_time = ktime_get();

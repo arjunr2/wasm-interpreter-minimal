@@ -32,7 +32,7 @@ unsigned short port=8008;
 struct sockaddr_in recvaddr;
 struct socket *sock;
 
-char *client_ip="192.168.1.109";
+char *client_ip="192.168.1.155";
 
 // Pong globals
 static struct task_struct *pong_kthread;
